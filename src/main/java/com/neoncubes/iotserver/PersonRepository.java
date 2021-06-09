@@ -9,9 +9,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 // @RepositoryRestResource is not required for a repository to be exported.
 // It is used only to change the export details
 @RepositoryRestResource(collectionResourceRel = "people", path = "people")
-
-// MongoRepository implements PagingAndSortingRepository
-/**
+/** MongoRepository implements PagingAndSortingRepository
  * Domain repositories extending this interface can selectively expose CRUD
  * methods by simply declaring methods of the same signature as those declared
  * in {@link CrudRepository}.

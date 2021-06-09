@@ -9,10 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This is a convenience annotation that adds
- * 
- * @Configuration Tags class as a source of bean definitions
- * @EnableAutoConfiguration Add beans based on classpath
- * @ComponentScan Look for other components in the package
+ * <p>
+ * Configuration Tags class as a source of bean definitions
+ * EnableAutoConfiguration Add beans based on classpath
+ * ComponentScan Look for other components in the package
  */
 @SpringBootApplication
 public class IoTServerApplication implements CommandLineRunner {
@@ -26,9 +26,10 @@ public class IoTServerApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+
         repository.deleteAll();
 
-        // save a couple of customes
+        // save a couple of customers
         repository.save(new Person("Hello", "John"));
         repository.save(new Person("Wired", "Heck"));
 
