@@ -1,5 +1,7 @@
 package com.neoncubes.iotserver;
 
+import org.springframework.boot.json.GsonJsonParser;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Vector;
@@ -8,15 +10,29 @@ import java.util.Vector;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @RestController // short hand for @ResponseBody and @Controller
 public class GreetingController {
 
-    private static final String firstNames[] = { "A&W", "Cloudflare", "Fastly", "YouTube" };
+//    // 5位同学的成绩:
+//    int[] ns = new int[] { 68, 79, 91, 85, 62 };
+//    System.out.println(ns.length); // 编译器自动推算数组大小为5
+//    int[] ns = { 68, 79, 91, 85, 62 };
+
+    Logger logger = LoggerFactory.getLogger(GreetingController.class);
+    private static final String[] firstNames = { "A&W", "Cloudflare", "Fastly", "YouTube" };
 
     private static final String template = "Hello, %s!";
     private final AtomicLong counter = new AtomicLong();
@@ -46,4 +62,10 @@ public class GreetingController {
         return new Greeting(counter.incrementAndGet(), String.format(template, last));
     }
 
+    @PostMapping("/createaccount")
+    public String createAccount(@RequestBody String payload) {
+        System.out.println(payload);
+        logger.info(payload);
+        return "OK?";
+    }
 }
