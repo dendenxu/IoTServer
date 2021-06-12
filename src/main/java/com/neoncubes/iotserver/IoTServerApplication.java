@@ -2,20 +2,62 @@ package com.neoncubes.iotserver;
 
 import java.util.List;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
+
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+
 /**
  * This is a convenience annotation that adds
  * <p>
  * Configuration Tags class as a source of bean definitions
- * EnableAutoConfiguration Add beans based on classpath
- * ComponentScan Look for other components in the package
+ * EnableAutoConfiguration Add beans based on classpath ComponentScan Look for
+ * other components in the package
  */
 @SpringBootApplication
-public class IoTServerApplication implements CommandLineRunner {
+@EnableWebSecurity
+@EnableRedisHttpSession // The @EnableRedisHttpSession annotation creates a Spring Bean with the name of
+                        // springSessionRepositoryFilter that implements Filter.
+public class IoTServerApplication extends WebSecurityConfigurerAdapter implements CommandLineRunner {
+
+    @Bean
+    public LettuceConnectionFactory connectionFactory() {
+        return new LettuceConnectionFactory();
+    }
+
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication().withUser("admin").password(passwordEncoder().encode("password")).roles("ADMIN");
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.httpBasic().and().authorizeRequests().antMatchers("/").hasRole("ADMIN").anyRequest().authenticated();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Autowired
     private PersonRepository repository;
