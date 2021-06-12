@@ -6,7 +6,10 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,6 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.security.Principal;
+import org.springframework.http.ResponseEntity;
 
 @RestController // short hand for @ResponseBody and @Controller
 public class UserController {
@@ -23,10 +29,48 @@ public class UserController {
     @Autowired
     private UserRepository repo;
 
-    // @PostMapping("/user/register")
-    @GetMapping("/")
-    public String helloAdmin() {
-        return "hello admin";
+    @GetMapping("/user")
+    private ResponseEntity<?> user(@RequestParam(value = "email", defaultValue = "") String email) {
+        User user = repo.findByEmail(email);
+        logger.info("Found: {}", user);
+        if (user != null) {
+            user.setPassword("password hash redacted");
+            return ResponseEntity.status(200).body(user);
+        } else {
+            return ResponseEntity.status(404).body("Cannot find the user specified");
+        }
     }
 
+    @PostMapping("/user/register")
+    private ResponseEntity<?> register(@RequestBody User user) {
+        logger.info("The server received this: {}", user);
+        if (repo.findByEmail(user.getEmail()) != null) {
+            return ResponseEntity.status(409).body("The email already exists.");
+        } else {
+            repo.save(user);
+            return ResponseEntity.status(200).body("OK, the server has remembered you.");
+        }
+    }
+
+    @PatchMapping("/user/replace")
+    private ResponseEntity<?> replace(@RequestBody User user) {
+        logger.info("The server received this: {}", user);
+        if (repo.findByEmail(user.getEmail()) == null) {
+            return ResponseEntity.status(409).body("The email doesn't exist.");
+        } else {
+            repo.save(user);
+            return ResponseEntity.status(200).body("OK, the server has remembered the new you.");
+        }
+    }
+
+    @DeleteMapping("/user/delete")
+    private ResponseEntity<?> delete(@RequestBody User user) {
+        logger.info("The server received this: {}", user);
+        if (repo.findByEmail(user.getEmail()) == null) {
+            return ResponseEntity.status(409).body("The email doesn't exist.");
+        } else {
+            repo.save(user);
+            return ResponseEntity.status(200).body("OK, the server has remembered the new you.");
+        }
+    }
 }

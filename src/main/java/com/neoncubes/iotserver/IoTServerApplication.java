@@ -36,7 +36,7 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 @SpringBootApplication
 @EnableWebSecurity
 @EnableRedisHttpSession // The @EnableRedisHttpSession annotation creates a Spring Bean with the name of
-                        // springSessionRepositoryFilter that implements Filter.
+// springSessionRepositoryFilter that implements Filter.
 public class IoTServerApplication extends WebSecurityConfigurerAdapter implements CommandLineRunner {
 
     @Bean
@@ -51,7 +51,12 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.httpBasic().and().authorizeRequests().antMatchers("/").hasRole("ADMIN").anyRequest().authenticated();
+        http.csrf().disable() // we don't care for CSRF in this example
+                .formLogin()
+                .and()
+                .authorizeRequests()
+                .anyRequest()
+                .authenticated();
     }
 
     @Bean
