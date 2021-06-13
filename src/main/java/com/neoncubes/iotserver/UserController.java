@@ -5,6 +5,8 @@ import java.util.ArrayList;
 // This can be used to create a long integer value that can be updated atomically
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,12 +31,28 @@ public class UserController {
     @Autowired
     private UserRepository repo;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+//    @PostMapping("/user/login")
+//    private ResponseEntity<?> login(@RequestBody User user) {
+//        User found = repo.findByEmail(user.getEmail());
+//        logger.info("Provided user: {}", user);
+//        logger.info("Found matching: {}", found);
+//        if (found != null && found.getPassword().equals(user.getPassword())) {
+//            user.setPassword("password hash redacted");
+//            return ResponseEntity.status(200).body(found);
+//        } else {
+//            return ResponseEntity.status(404).body("Cannot find the user specified or the password is incorrect.");
+//        }
+//    }
+
     @GetMapping("/user")
     private ResponseEntity<?> user(@RequestParam(value = "email", defaultValue = "") String email) {
         User user = repo.findByEmail(email);
         logger.info("Found: {}", user);
         if (user != null) {
-            user.setPassword("password hash redacted");
+//            user.setPassword("password hash redacted");
             return ResponseEntity.status(200).body(user);
         } else {
             return ResponseEntity.status(404).body("Cannot find the user specified");
@@ -47,6 +65,7 @@ public class UserController {
         if (repo.findByEmail(user.getEmail()) != null) {
             return ResponseEntity.status(409).body("The email already exists.");
         } else {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
             repo.save(user);
             return ResponseEntity.status(200).body("OK, the server has remembered you.");
         }
@@ -58,6 +77,7 @@ public class UserController {
         if (repo.findByEmail(user.getEmail()) == null) {
             return ResponseEntity.status(409).body("The email doesn't exist.");
         } else {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
             repo.save(user);
             return ResponseEntity.status(200).body("OK, the server has remembered the new you.");
         }
@@ -69,8 +89,8 @@ public class UserController {
         if (repo.findByEmail(user.getEmail()) == null) {
             return ResponseEntity.status(409).body("The email doesn't exist.");
         } else {
-            repo.save(user);
-            return ResponseEntity.status(200).body("OK, the server has remembered the new you.");
+            repo.delete(user);
+            return ResponseEntity.status(200).body("OK, the server has deleted you.");
         }
     }
 }

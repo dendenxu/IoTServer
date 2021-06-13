@@ -16,6 +16,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -45,18 +46,26 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
     }
 
     @Autowired
+    private IoTUserDetailService userService;
+
+    @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
         auth.inMemoryAuthentication().withUser("admin").password(passwordEncoder().encode("password")).roles("ADMIN");
+        auth.userDetailsService(userService);
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable() // we don't care for CSRF in this example
                 .formLogin()
+//                .loginPage("/user/login")
+//                .failureForwardUrl("/user/login?error")
+                .permitAll()
                 .and()
                 .authorizeRequests()
                 .anyRequest()
-                .authenticated();
+                .authenticated()
+                .and();
     }
 
     @Bean
