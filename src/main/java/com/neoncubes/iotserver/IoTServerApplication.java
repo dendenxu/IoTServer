@@ -58,8 +58,8 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable() // we don't care for CSRF in this example
                 .formLogin()
-//                .loginPage("/user/login")
-//                .failureForwardUrl("/user/login?error")
+//                .loginPage("/user/signin")
+//                .failureForwardUrl("/user/signin?error")
                 .permitAll()
                 .and()
                 .authorizeRequests()

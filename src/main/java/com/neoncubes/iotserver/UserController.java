@@ -34,7 +34,7 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-//    @PostMapping("/user/login")
+//    @PostMapping("/user/signin")
 //    private ResponseEntity<?> login(@RequestBody User user) {
 //        User found = repo.findByEmail(user.getEmail());
 //        logger.info("Provided user: {}", user);
