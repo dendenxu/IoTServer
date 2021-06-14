@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,6 +25,7 @@ import java.security.Principal;
 import org.springframework.http.ResponseEntity;
 
 @RestController // short hand for @ResponseBody and @Controller
+@RequestMapping("/api")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
