@@ -36,25 +36,27 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-//    @PostMapping("/user/signin")
-//    private ResponseEntity<?> login(@RequestBody User user) {
-//        User found = repo.findByEmail(user.getEmail());
-//        logger.info("Provided user: {}", user);
-//        logger.info("Found matching: {}", found);
-//        if (found != null && found.getPassword().equals(user.getPassword())) {
-//            user.setPassword("password hash redacted");
-//            return ResponseEntity.status(200).body(found);
-//        } else {
-//            return ResponseEntity.status(404).body("Cannot find the user specified or the password is incorrect.");
-//        }
-//    }
+    // @PostMapping("/user/signin")
+    // private ResponseEntity<?> login(@RequestBody User user) {
+    // User found = repo.findByEmail(user.getEmail());
+    // logger.info("Provided user: {}", user);
+    // logger.info("Found matching: {}", found);
+    // if (found != null && found.getPassword().equals(user.getPassword())) {
+    // user.setPassword("password hash redacted");
+    // return ResponseEntity.status(200).body(found);
+    // } else {
+    // return ResponseEntity.status(404).body("Cannot find the user specified or the
+    // password is incorrect.");
+    // }
+    // }
 
-    @GetMapping("/user")
-    private ResponseEntity<?> user(@RequestParam(value = "email", defaultValue = "") String email) {
+    @GetMapping("/user/query")
+    public ResponseEntity<?> user(@RequestParam(value = "email", defaultValue = "") String email) {
+        logger.info("Finding by email: {}", email);
         User user = repo.findByEmail(email);
         logger.info("Found: {}", user);
         if (user != null) {
-//            user.setPassword("password hash redacted");
+            // user.setPassword("password hash redacted");
             return ResponseEntity.status(200).body(user);
         } else {
             return ResponseEntity.status(404).body("Cannot find the user specified");
@@ -62,7 +64,7 @@ public class UserController {
     }
 
     @PostMapping("/user/register")
-    private ResponseEntity<?> register(@RequestBody User user) {
+    public ResponseEntity<?> register(@RequestBody User user) {
         logger.info("The server received this: {}", user);
         if (repo.findByEmail(user.getEmail()) != null) {
             return ResponseEntity.status(409).body("The email already exists.");
@@ -74,7 +76,7 @@ public class UserController {
     }
 
     @PatchMapping("/user/replace")
-    private ResponseEntity<?> replace(@RequestBody User user) {
+    public ResponseEntity<?> replace(@RequestBody User user) {
         logger.info("The server received this: {}", user);
         if (repo.findByEmail(user.getEmail()) == null) {
             return ResponseEntity.status(409).body("The email doesn't exist.");
@@ -86,7 +88,7 @@ public class UserController {
     }
 
     @DeleteMapping("/user/delete")
-    private ResponseEntity<?> delete(@RequestBody User user) {
+    public ResponseEntity<?> delete(@RequestBody User user) {
         logger.info("The server received this: {}", user);
         if (repo.findByEmail(user.getEmail()) == null) {
             return ResponseEntity.status(409).body("The email doesn't exist.");
