@@ -63,6 +63,9 @@ public class MqttReceiver {
     @Autowired
     private ObjectMapper mapper;
 
+    @Autowired
+    private IoTMessageRepository repo;
+
     public void publish(final String topic, final String payload, int qos, boolean retained)
             throws MqttException {
         MqttMessage mqttMessage = new MqttMessage();
@@ -86,6 +89,8 @@ public class MqttReceiver {
             try {
                 IoTMessage msg = mapper.readValue(payload, IoTMessage.class);
                 logger.info("Deserialized IoTMessage: {}", msg);
+
+                repo.save(msg); // will be print an error?
             } catch (Exception e) {
                 e.printStackTrace();
             }
