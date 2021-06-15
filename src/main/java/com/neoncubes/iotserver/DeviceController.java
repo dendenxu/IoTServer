@@ -24,7 +24,7 @@ import org.springframework.http.ResponseEntity;
 @RequestMapping("/api/device")
 public class DeviceController {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    private static final Logger logger = LoggerFactory.getLogger(DeviceController.class);
 
     @Autowired
     private DeviceRepository deviceRepository;
@@ -123,7 +123,7 @@ public class DeviceController {
         }
 
         User user = userRepository.findByEmail(email);
-        if (deviceRepository.findByIdAndUser(device.getId(), user) == null) {
+        if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user) == null) {
             return ResponseEntity.status(409).body("The device doesn't exists.");
         } else {
             deviceRepository.save(device);
@@ -146,7 +146,7 @@ public class DeviceController {
         }
 
         User user = userRepository.findByEmail(email);
-        if (deviceRepository.findByIdAndUser(device.getId(), user) == null) {
+        if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user) == null) {
             return ResponseEntity.status(409).body("The device doesn't exists.");
         } else {
             deviceRepository.delete(device);

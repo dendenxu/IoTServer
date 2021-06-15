@@ -10,9 +10,11 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 public interface DeviceRepository extends MongoRepository<Device, String> {
     List<Device> findByType(@Param("type") Device.DeviceType type);
 
+    Device findByMqttId(@Param("mqttId") String mqttId);
+
     Device findByNameAndUser(@Param("name") String name, @Param("user") User user);
 
-    Device findByIdAndUser(@Param("id") String id, @Param("user") User user);
+    Device findByMqttIdAndUser(@Param("mqttId") String mqttId, @Param("user") User user);
 
     List<Device> findByUser(@Param("user") User user);
 }

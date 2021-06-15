@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class IoTUserPrincipal implements UserDetails {
     private final User user;
 
-    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    private static final Logger logger = LoggerFactory.getLogger(IoTUserPrincipal.class);
 
     public IoTUserPrincipal(User user) {
         this.user = user;

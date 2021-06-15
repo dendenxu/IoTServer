@@ -8,7 +8,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 
@@ -19,12 +18,13 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document
-@CompoundIndex(name = "device_id", def = "{'user.email' : 1, 'name' : 1}")
+@CompoundIndex(name = "device_unique_key", def = "{'user.email' : 1, 'name' : 1}")
 public class Device implements Serializable {
     @Id
-    private String id;
+    private String mqttId;
+    private String desc;
+    // Note that the device name and user.email form another unique key
     private String name;
-    private String info;
     @DBRef
     private User user;
 
@@ -48,9 +48,10 @@ public class Device implements Serializable {
     @LastModifiedDate
     private Date lastModifiedDate;
 
-    public Device(String name, String info, Device.DeviceType[] type, User user) {
+    public Device(String mqttId, String name, String desc, Device.DeviceType[] type, User user) {
+        this.mqttId = mqttId;
         this.name = name;
-        this.info = info;
+        this.desc = desc;
         this.type = type;
         this.user = user;
     }

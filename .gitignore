@@ -34,3 +34,8 @@ build/
 
 ### Frontend ###
 mediconnect-front/
+frontend/
+
+### Mqtt ###
+.mqtt-persistence/
+DESKTOP-XZDDSPC-MQTT-tcp1270011883/

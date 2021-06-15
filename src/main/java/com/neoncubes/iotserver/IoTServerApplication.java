@@ -2,6 +2,16 @@ package com.neoncubes.iotserver;
 
 import java.util.List;
 
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.MqttException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.CommandLineRunner;
@@ -40,6 +50,8 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 // springSessionRepositoryFilter that implements Filter.
 public class IoTServerApplication extends WebSecurityConfigurerAdapter implements CommandLineRunner {
 
+    private static final Logger logger = LoggerFactory.getLogger(IoTServerApplication.class);
+
     @Bean
     public LettuceConnectionFactory connectionFactory() {
         return new LettuceConnectionFactory();
@@ -77,8 +89,12 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
     @Autowired
     private PersonRepository repository;
 
+    @Autowired
+    private MqttReceiver receiver;
+
     public static void main(String[] args) {
         SpringApplication.run(IoTServerApplication.class, args);
+        logger.info("The main program has started");
     }
 
     @Override
@@ -106,6 +122,8 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
         System.out.println("Customer found with findByLastName('Heck')");
         people = repository.findByLastName("Heck");
         System.out.println(people);
+
+        receiver.subscribe("testapp");
 
     }
 }
