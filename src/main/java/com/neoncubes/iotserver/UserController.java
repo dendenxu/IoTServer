@@ -25,7 +25,7 @@ import java.security.Principal;
 import org.springframework.http.ResponseEntity;
 
 @RestController // short hand for @ResponseBody and @Controller
-@RequestMapping("/api")
+@RequestMapping("/api/user")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
@@ -50,7 +50,7 @@ public class UserController {
     // }
     // }
 
-    @GetMapping("/user/query")
+    @GetMapping("/query")
     public ResponseEntity<?> user(@RequestParam(value = "email", defaultValue = "") String email) {
         logger.info("Finding by email: {}", email);
         User user = repo.findByEmail(email);
@@ -63,7 +63,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/user/register")
+    @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
         logger.info("The server received this: {}", user);
         if (repo.findByEmail(user.getEmail()) != null) {
@@ -75,7 +75,7 @@ public class UserController {
         }
     }
 
-    @PatchMapping("/user/replace")
+    @PatchMapping("/replace")
     public ResponseEntity<?> replace(@RequestBody User user) {
         logger.info("The server received this: {}", user);
         if (repo.findByEmail(user.getEmail()) == null) {
@@ -87,7 +87,7 @@ public class UserController {
         }
     }
 
-    @DeleteMapping("/user/delete")
+    @DeleteMapping("/delete")
     public ResponseEntity<?> delete(@RequestBody User user) {
         logger.info("The server received this: {}", user);
         if (repo.findByEmail(user.getEmail()) == null) {

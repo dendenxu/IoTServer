@@ -61,10 +61,9 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
                 .loginPage("/signin").loginProcessingUrl("/api/user/signin").permitAll()
                 .and()
                 .authorizeRequests()
+                .antMatchers("/signup").permitAll()
                 .antMatchers("/api/user/query").permitAll()
-                .antMatchers("/api/user/replace").permitAll()
-//                .antMatchers("/public/**").permitAll()
-//                .antMatchers("/resources/**").permitAll()
+                .antMatchers("/api/user/register").permitAll()
                 .antMatchers("/static/**").permitAll()
                 .anyRequest().authenticated()
                 .and();

@@ -1,9 +1,6 @@
 package com.neoncubes.iotserver;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Arrays;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +26,11 @@ public class IoTUserPrincipal implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // TODO Auto-generated method stub
         logger.info("Getting authorities");
-        return Collections.singletonList(new SimpleGrantedAuthority(this.user.getRole()));
+        ArrayList<SimpleGrantedAuthority> authorities = new ArrayList<SimpleGrantedAuthority>();
+        for (User.UserRole role : this.user.getRole()) {
+            authorities.add(new SimpleGrantedAuthority(role.name()));
+        }
+        return authorities;
     }
 
     @Override
