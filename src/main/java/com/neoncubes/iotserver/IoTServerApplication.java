@@ -1,7 +1,9 @@
 package com.neoncubes.iotserver;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.cfg.HandlerInstantiator;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
@@ -12,12 +14,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.SpringHandlerInstantiator;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -36,6 +43,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * This is a convenience annotation that adds
@@ -51,6 +59,30 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 public class IoTServerApplication extends WebSecurityConfigurerAdapter implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(IoTServerApplication.class);
+
+//    @Bean
+//    public HandlerInstantiator handlerInstantiator(ApplicationContext applicationContext) {
+//        return new SpringHandlerInstantiator(applicationContext.getAutowireCapableBeanFactory());
+//    }
+//
+//    @Bean
+//    public Jackson2ObjectMapperBuilder jackson2ObjectMapperBuilder(HandlerInstantiator handlerInstantiator) {
+//        Jackson2ObjectMapperBuilder result = new Jackson2ObjectMapperBuilder();
+//        result.handlerInstantiator(handlerInstantiator);
+//        return result;
+//    }
+//
+//    @Bean
+//    public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter(Jackson2ObjectMapperBuilder objectMapperBuilder) {
+//        return new MappingJackson2HttpMessageConverter(objectMapperBuilder.build());
+//    }
+//
+//    @Bean
+//    public RestTemplate restTemplate(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) {
+//        List<HttpMessageConverter<?>> messageConverterList = new ArrayList<>();
+//        messageConverterList.add(mappingJackson2HttpMessageConverter);
+//        return new RestTemplate(messageConverterList);
+//    }
 
     @Bean
     public LettuceConnectionFactory connectionFactory() {
@@ -124,6 +156,7 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
         System.out.println(people);
 
         receiver.subscribe("testapp");
+        logger.info("Subscribed to mqtt topic: {} using {}", "testapp", receiver);
 
     }
 }

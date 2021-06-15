@@ -1,36 +1,79 @@
 package com.neoncubes.iotserver;
 
-import com.google.gson.*;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Data;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.support.SpringBeanAutowiringSupport;
 
-import java.lang.reflect.Type;
+import java.io.IOException;
+import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Date;
 
 @Component
-public class IoTMessageDeserializer implements JsonDeserializer<IoTMessage> {
+public class IoTMessageDeserializer extends JsonDeserializer<IoTMessage> {
+
+    private static final Logger logger = LoggerFactory.getLogger(IoTMessageDeserializer.class);
 
     @Autowired
     private DeviceRepository repo;
 
+    private final ObjectMapper mapper = new ObjectMapper();
+
+//    public IoTMessageDeserializer() {
+//        logger.info("Constructing...");
+//        // Mqtt start separate thread?
+//        // So no context will be actually found
+//        SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
+//    }
+
     @Override
-    public IoTMessage deserialize(JsonElement json, Type type, JsonDeserializationContext ctx) throws JsonParseException {
+    public IoTMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
         IoTMessage msg = new IoTMessage();
 
-        JsonObject obj = json.getAsJsonObject();
-        String mqttId = obj.get("clientid").getAsString();
-        msg.setDevice(repo.findByMqttId(mqttId));
-        long time = obj.get("timestamp").getAsLong();
-        Timestamp stamp = new Timestamp(time);
-        msg.setDate(new Date(stamp.getTime()));
-        msg.setInfo(obj.get("info").getAsString());
-        msg.setValue(obj.get("value").getAsInt());
-        msg.setAlert(obj.get("alert").getAsInt());
-        msg.setLng(obj.get("lng").getAsDouble());
-        msg.setLat(obj.get("lat").getAsDouble());
+        logger.info("Deserializing {} using {}, {}", jsonParser, mapper, repo);
+
+        ClientMessage clientMessage = mapper.readValue(jsonParser, ClientMessage.class);
+//        ClientMessage clientMessage = new ClientMessage();
+        logger.info("Got client message: {}", clientMessage);
+        msg.setDevice(repo.findByMqttId(clientMessage.clientId));
+        Timestamp stamp = new Timestamp(clientMessage.timestamp);
+        Date date = new Date(stamp.getTime());
+        msg.setDate(date);
+        msg.setInfo(clientMessage.info);
+        msg.setValue(clientMessage.value);
+        msg.setAlert(clientMessage.alert);
+        msg.setLng(clientMessage.lng);
+        msg.setLat(clientMessage.lat);
 
         return msg;
     }
-}
 
+    // Reference:
+    @Data
+    public static class ClientMessage implements Serializable {
+        //设备ID
+        private String clientId;
+        //上报信息
+        private String info;
+        //设备数据
+        private int value;
+        //是否告警，0-正常，1-告警
+        private int alert;
+        //设备位置，经度
+        private double lng;
+        //设备位置，纬度
+        private double lat;
+        //上报时间，ms
+        private long timestamp;
+    }
+
+
+}
