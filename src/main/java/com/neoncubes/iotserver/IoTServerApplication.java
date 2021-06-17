@@ -95,15 +95,13 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
                 .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT))
 
 ////         add CSRF protection to all URLs
-                .and()
-                .csrf()
-                .disable()
-                .cors()
-                .disable()
         // use custom filter for the default username password filter
         // add CSRF protection to all URLs
-//                .and()
-//                .csrf()
+                .and()
+//                .cors()
+//                .disable()
+                .csrf()
+                .disable()
 //                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
         ;
     }
