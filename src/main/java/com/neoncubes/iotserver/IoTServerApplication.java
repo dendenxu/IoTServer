@@ -21,10 +21,14 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.json.SpringHandlerInstantiator;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -40,6 +44,12 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -54,40 +64,9 @@ import org.springframework.web.client.RestTemplate;
  */
 @SpringBootApplication
 @EnableWebSecurity
-@EnableRedisHttpSession // The @EnableRedisHttpSession annotation creates a Spring Bean with the name of
-// springSessionRepositoryFilter that implements Filter.
 public class IoTServerApplication extends WebSecurityConfigurerAdapter implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(IoTServerApplication.class);
-
-//    @Bean
-//    public HandlerInstantiator handlerInstantiator(ApplicationContext applicationContext) {
-//        return new SpringHandlerInstantiator(applicationContext.getAutowireCapableBeanFactory());
-//    }
-//
-//    @Bean
-//    public Jackson2ObjectMapperBuilder jackson2ObjectMapperBuilder(HandlerInstantiator handlerInstantiator) {
-//        Jackson2ObjectMapperBuilder result = new Jackson2ObjectMapperBuilder();
-//        result.handlerInstantiator(handlerInstantiator);
-//        return result;
-//    }
-//
-//    @Bean
-//    public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter(Jackson2ObjectMapperBuilder objectMapperBuilder) {
-//        return new MappingJackson2HttpMessageConverter(objectMapperBuilder.build());
-//    }
-//
-//    @Bean
-//    public RestTemplate restTemplate(MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter) {
-//        List<HttpMessageConverter<?>> messageConverterList = new ArrayList<>();
-//        messageConverterList.add(mappingJackson2HttpMessageConverter);
-//        return new RestTemplate(messageConverterList);
-//    }
-
-    @Bean
-    public LettuceConnectionFactory connectionFactory() {
-        return new LettuceConnectionFactory();
-    }
 
     @Autowired
     private IoTUserDetailService userService;
@@ -98,19 +77,48 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
         auth.userDetailsService(userService);
     }
 
+    @Bean
+    public EmailPasswordFilter authenticationFilter() throws Exception {
+        EmailPasswordFilter authenticationFilter = new EmailPasswordFilter();
+        authenticationFilter.setAuthenticationSuccessHandler((req, res, auth) -> res.setStatus(HttpStatus.NO_CONTENT.value()));
+        authenticationFilter.setAuthenticationFailureHandler(new SimpleUrlAuthenticationFailureHandler());
+        authenticationFilter.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/api/account/login", "POST"));
+        authenticationFilter.setAuthenticationManager(authenticationManagerBean());
+        return authenticationFilter;
+    }
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable() // we don't care for CSRF in this example
-                .formLogin()
-                .loginPage("/signin").loginProcessingUrl("/api/user/signin").permitAll()
-                .and()
+        http
+                .addFilterBefore(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+
+                // all URLs are protected, except 'POST /login' so anonymous user can authenticate
                 .authorizeRequests()
-                .antMatchers("/signup").permitAll()
-                .antMatchers("/api/user/query").permitAll()
-                .antMatchers("/api/user/register").permitAll()
-                .antMatchers("/static/**").permitAll()
+                .antMatchers("/api/account/**").permitAll()
                 .anyRequest().authenticated()
-                .and();
+
+                // 401-UNAUTHORIZED when anonymous user tries to access protected URLs
+                .and()
+                .exceptionHandling()
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+
+                // IMPORTANT: IF YOU WANT TO USE YOUR IMPLEMENTATION, DON'T CONFIGURE HERE
+
+                // standard logout that sends 204-NO_CONTENT when logout is OK
+                .and()
+                .logout()
+                .logoutUrl("/api/account/logout")
+                .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT))
+
+                .and()
+                .csrf()
+                .disable()
+        // use custom filter for the default username password filter
+        // add CSRF protection to all URLs
+//                .and()
+//                .csrf()
+//                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+        ;
     }
 
     @Bean

@@ -5,6 +5,8 @@ import java.util.ArrayList;
 // This can be used to create a long integer value that can be updated atomically
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,10 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.Principal;
+
 import org.springframework.http.ResponseEntity;
 
 @RestController // short hand for @ResponseBody and @Controller
-@RequestMapping("/api/user")
+@RequestMapping("/api")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
@@ -36,65 +39,64 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // @PostMapping("/user/signin")
-    // private ResponseEntity<?> login(@RequestBody User user) {
-    // User found = repo.findByEmail(user.getEmail());
-    // logger.info("Provided user: {}", user);
-    // logger.info("Found matching: {}", found);
-    // if (found != null && found.getPassword().equals(user.getPassword())) {
-    // user.setPassword("password hash redacted");
-    // return ResponseEntity.status(200).body(found);
-    // } else {
-    // return ResponseEntity.status(404).body("Cannot find the user specified or the
-    // password is incorrect.");
-    // }
-    // }
+    @PostMapping({"/account/checkemail", "/user/checkemail"})
+    public ResponseEntity<?> checkemail(
+            @RequestBody JsonNode node
+    ) {
+        logger.info("Finding by email: {}", node);
+        String email = node.get("email").asText();
+        User user = repo.findByEmail(email);
+        if (user != null) {
+            return ResponseEntity.status(HttpStatus.OK).body("This email exists");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cannot find the user specified.");
+        }
+    }
 
-    @GetMapping("/query")
+    @GetMapping("/user/query")
     public ResponseEntity<?> user(@RequestParam(value = "email", defaultValue = "") String email) {
         logger.info("Finding by email: {}", email);
         User user = repo.findByEmail(email);
         logger.info("Found: {}", user);
         if (user != null) {
-            // user.setPassword("password hash redacted");
-            return ResponseEntity.status(200).body(user);
+            return ResponseEntity.status(HttpStatus.OK).body(user);
         } else {
-            return ResponseEntity.status(404).body("Cannot find the user specified");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cannot find the user specified.");
         }
     }
 
-    @PostMapping("/register")
+    @PostMapping({"/account/create", "/user/create"})
     public ResponseEntity<?> register(@RequestBody User user) {
         logger.info("The server received this: {}", user);
         if (repo.findByEmail(user.getEmail()) != null) {
-            return ResponseEntity.status(409).body("The email already exists.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("The email already exists.");
         } else {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             repo.save(user);
-            return ResponseEntity.status(200).body("OK, the server has remembered you.");
+            return ResponseEntity.status(HttpStatus.CREATED).body("OK, the server has remembered you.");
         }
     }
 
-    @PatchMapping("/replace")
+    @PatchMapping("/user/replace")
     public ResponseEntity<?> replace(@RequestBody User user) {
         logger.info("The server received this: {}", user);
         if (repo.findByEmail(user.getEmail()) == null) {
-            return ResponseEntity.status(409).body("The email doesn't exist.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("The email doesn't exist.");
         } else {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             repo.save(user);
-            return ResponseEntity.status(200).body("OK, the server has remembered the new you.");
+            return ResponseEntity.status(HttpStatus.OK).body("OK, the server has remembered the new you.");
         }
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("/user/delete")
     public ResponseEntity<?> delete(@RequestBody User user) {
         logger.info("The server received this: {}", user);
         if (repo.findByEmail(user.getEmail()) == null) {
-            return ResponseEntity.status(409).body("The email doesn't exist.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("The email doesn't exist.");
         } else {
             repo.delete(user);
-            return ResponseEntity.status(200).body("OK, the server has deleted you.");
+            return ResponseEntity.status(HttpStatus.OK).body("OK, the server has deleted you.");
         }
     }
 }

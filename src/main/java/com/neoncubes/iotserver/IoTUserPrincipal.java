@@ -43,7 +43,7 @@ public class IoTUserPrincipal implements UserDetails {
 
     @Override
     public String getUsername() {
-        logger.info("Getting user name for {}", this.user);
+//        logger.info("Getting user name for {}", this.user);
         // TODO Auto-generated method stub
         return this.user.getEmail();
     }
