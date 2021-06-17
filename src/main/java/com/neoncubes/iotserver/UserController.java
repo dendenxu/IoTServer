@@ -43,11 +43,11 @@ public class UserController {
     public ResponseEntity<?> checkemail(
             @RequestBody JsonNode node
     ) {
-        logger.info("Finding by email: {}", node);
+        logger.info("Finding by json node: {}", node);
         String email = node.get("email").asText();
         User user = repo.findByEmail(email);
         if (user != null) {
-            return ResponseEntity.status(HttpStatus.OK).body("This email exists");
+            return ResponseEntity.status(HttpStatus.OK).body("This email exists.");
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cannot find the user specified.");
         }

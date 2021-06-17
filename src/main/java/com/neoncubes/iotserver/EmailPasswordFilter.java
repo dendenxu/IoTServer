@@ -46,8 +46,8 @@ public class EmailPasswordFilter extends UsernamePasswordAuthenticationFilter {
 
         logger.info("Got authorization attempt: {}", authBody);
 
-        String username = authBody.getUsername();
-        String password = authBody.getPassword();
+        String username = authBody.getEmail();
+        String password = authBody.getPasswd();
 
         return new UsernamePasswordAuthenticationToken(
                 username, password);
@@ -57,8 +57,8 @@ public class EmailPasswordFilter extends UsernamePasswordAuthenticationFilter {
 
     @Data
     public static class AuthBody {
-        private String username;
-        private String password;
+        private String email;
+        private String passwd;
     }
 
 }

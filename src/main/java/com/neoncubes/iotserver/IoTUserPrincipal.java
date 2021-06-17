@@ -25,11 +25,11 @@ public class IoTUserPrincipal implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // TODO Auto-generated method stub
-        logger.info("Getting authorities");
         ArrayList<SimpleGrantedAuthority> authorities = new ArrayList<SimpleGrantedAuthority>();
         for (User.UserRole role : this.user.getRole()) {
             authorities.add(new SimpleGrantedAuthority(role.name()));
         }
+        logger.info("Getting authorities: {}", authorities);
         return authorities;
     }
 
