@@ -18,7 +18,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document
-@CompoundIndex(name = "device_unique_key", def = "{'user.email' : 1, 'name' : 1}")
+@CompoundIndex(name = "device_unique_key", def = "{'user.email' : 1, 'name' : 1}", unique = true)
 public class Device implements Serializable {
     @Id
     private String mqttId;
@@ -33,6 +33,7 @@ public class Device implements Serializable {
 
     public enum DeviceType {
         Car(0), Bot(1), Drone(2), Monitor(3);
+
         public final int i;
 
         private DeviceType(int i) {
@@ -40,7 +41,7 @@ public class Device implements Serializable {
         }
     }
 
-    private DeviceType[] type = {DeviceType.Bot};
+    private DeviceType[] type = { DeviceType.Bot };
 
     @CreatedDate
     private Date createdDate;
