@@ -12,10 +12,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.io.Serializable;
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document
 public class User implements Serializable {
     @Id
     private String email;
@@ -28,6 +29,7 @@ public class User implements Serializable {
 
     public enum UserRole {
         USER(0), ADMIN(1), DBA(2), GUEST(3);
+
         public final int i;
 
         private UserRole(int i) {

@@ -6,7 +6,12 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,10 +44,22 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @PostMapping({"/account/checkemail", "/user/checkemail"})
-    public ResponseEntity<?> checkemail(
-            @RequestBody JsonNode node
-    ) {
+    @Autowired
+    private ObjectMapper mapper;
+
+    @GetMapping("/account/auth")
+    public ResponseEntity<?> auth(Authentication auth) {
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You're not logged in.");
+        } else {
+            ObjectNode authNode = mapper.createObjectNode();
+            authNode.put("email", auth.getName());
+            return ResponseEntity.status(HttpStatus.OK).body(authNode);
+        }
+    }
+
+    @PostMapping({ "/account/checkemail", "/user/checkemail" })
+    public ResponseEntity<?> checkemail(@RequestBody JsonNode node) {
         logger.info("Finding by json node: {}", node);
         String email = node.get("email").asText();
         User user = repo.findByEmail(email);
@@ -65,7 +82,7 @@ public class UserController {
         }
     }
 
-    @PostMapping({"/account/create", "/user/create"})
+    @PostMapping({ "/account/create", "/user/create" })
     public ResponseEntity<?> register(@RequestBody User user) {
         logger.info("The server received this: {}", user);
         if (repo.findByEmail(user.getEmail()) != null) {

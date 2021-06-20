@@ -15,7 +15,6 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document
 public class IoTMessage implements Serializable {
     @Id
     private String id;
