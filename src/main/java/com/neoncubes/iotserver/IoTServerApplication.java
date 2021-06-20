@@ -58,9 +58,11 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
     @Bean
     public EmailPasswordFilter authenticationFilter() throws Exception {
         EmailPasswordFilter authenticationFilter = new EmailPasswordFilter();
-        authenticationFilter.setAuthenticationSuccessHandler((req, res, auth) -> res.setStatus(HttpStatus.NO_CONTENT.value()));
+        authenticationFilter
+                .setAuthenticationSuccessHandler((req, res, auth) -> res.setStatus(HttpStatus.NO_CONTENT.value()));
         authenticationFilter.setAuthenticationFailureHandler(new SimpleUrlAuthenticationFailureHandler());
-        authenticationFilter.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/api/account/login", "POST"));
+        authenticationFilter
+                .setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/api/account/login", "POST"));
         authenticationFilter.setAuthenticationManager(authenticationManagerBean());
         return authenticationFilter;
     }
@@ -70,40 +72,34 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
         return new CorsFilter();
     }
 
+    @Autowired
+    private AuthEntryPoint authEntryPoint;
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http
+        http.addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(corsFilter(), EmailPasswordFilter.class)
-                .addFilterBefore(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
 
-                // all URLs are protected, except 'POST /login' so anonymous user can authenticate
-                .authorizeRequests()
-                .antMatchers("/api/account/**").permitAll()
+                // all URLs are protected, except 'POST /login' so anonymous user can
+                // authenticate
+                .authorizeRequests().antMatchers("/api/account/**").permitAll().antMatchers(HttpMethod.OPTIONS, "/**")
+                .permitAll()
+                // allow CORS option calls
                 .anyRequest().authenticated()
 
                 // 401-UNAUTHORIZED when anonymous user tries to access protected URLs
-                .and()
-                .exceptionHandling()
-                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.FORBIDDEN))
+                .and().exceptionHandling().authenticationEntryPoint(authEntryPoint)
 
                 // IMPORTANT: IF YOU WANT TO USE YOUR IMPLEMENTATION, DON'T CONFIGURE HERE
 
                 // standard logout that sends 204-NO_CONTENT when logout is OK
-                .and()
-                .logout()
-                .logoutUrl("/api/account/logout")
+                .and().logout().logoutUrl("/api/account/logout")
                 .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT))
 
-////         add CSRF protection to all URLs
-        // use custom filter for the default username password filter
-        // add CSRF protection to all URLs
-                .and()
-//                .cors()
-//                .disable()
-                .csrf()
-                .disable()
-//                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-        ;
+                //// add CSRF protection to all URLs
+                // use custom filter for the default username password filter
+                // add CSRF protection to all URLs
+                .and().csrf().disable();
     }
 
     @Bean

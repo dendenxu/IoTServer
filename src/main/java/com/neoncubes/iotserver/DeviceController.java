@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 
 @RestController // short hand for @ResponseBody and @Controller
 @RequestMapping("/api/device")
@@ -42,7 +43,8 @@ public class DeviceController {
         } else {
             logger.info("User {} has authorities: {}", email, auth.getAuthorities());
             if (email != null) {
-                boolean canAccess = auth.getAuthorities().contains(new SimpleGrantedAuthority(User.UserRole.ADMIN.name()));
+                boolean canAccess = auth.getAuthorities()
+                        .contains(new SimpleGrantedAuthority(User.UserRole.ADMIN.name()));
                 if (!canAccess) {
                     return Pair.of(false, "You're not an ADMIN");
                 } else {
@@ -55,8 +57,7 @@ public class DeviceController {
     }
 
     @GetMapping("/query")
-    public ResponseEntity<?> query(
-            @RequestParam(required = false) String email,
+    public ResponseEntity<?> query(@RequestParam(required = false) String email,
             @RequestParam(required = false) String name, Authentication auth) {
         logger.info("Getting params: email: {}, name: {}, auth: {}", email, name, auth);
 
@@ -64,31 +65,28 @@ public class DeviceController {
         if (access.getFirst()) {
             email = access.getSecond();
         } else {
-            return ResponseEntity.status(404).body(access.getSecond());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(access.getSecond());
         }
 
         User user = userRepository.findByEmail(email);
         if (user == null) {
-            return ResponseEntity.status(409).body("Cannot find the user specified");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the user specified");
         } else {
             if (name == null) {
-                return ResponseEntity.status(200).body(deviceRepository.findByUser(user));
+                return ResponseEntity.status(HttpStatus.OK).body(deviceRepository.findByUser(user));
             } else {
                 Device device = deviceRepository.findByNameAndUser(name, user);
                 if (device == null) {
-                    return ResponseEntity.status(409).body("Cannot find the device specified");
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the device specified");
                 } else {
-                    return ResponseEntity.status(200).body(device);
+                    return ResponseEntity.status(HttpStatus.OK).body(device);
                 }
             }
         }
     }
 
-
     @PostMapping("/create")
-    public ResponseEntity<?> register(
-            @RequestParam(required = false) String email,
-            @RequestBody Device device,
+    public ResponseEntity<?> register(@RequestParam(required = false) String email, @RequestBody Device device,
             Authentication auth) {
         logger.info("The server received this: {}, email: {}, auth: {}", device, email, auth);
 
@@ -96,22 +94,20 @@ public class DeviceController {
         if (access.getFirst()) {
             email = access.getSecond();
         } else {
-            return ResponseEntity.status(404).body(access.getSecond());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(access.getSecond());
         }
 
         User user = userRepository.findByEmail(email);
         if (deviceRepository.findByNameAndUser(device.getName(), user) != null) {
-            return ResponseEntity.status(409).body("The device already exists.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("The device already exists.");
         } else {
             deviceRepository.save(device);
-            return ResponseEntity.status(200).body("OK, the server has remembered this device.");
+            return ResponseEntity.status(HttpStatus.OK).body("OK, the server has remembered this device.");
         }
     }
 
     @PatchMapping("/replace")
-    public ResponseEntity<?> replace(
-            @RequestParam(required = false) String email,
-            @RequestBody Device device,
+    public ResponseEntity<?> replace(@RequestParam(required = false) String email, @RequestBody Device device,
             Authentication auth) {
         logger.info("The server received this: {}, email: {}, auth: {}", device, email, auth);
 
@@ -119,22 +115,20 @@ public class DeviceController {
         if (access.getFirst()) {
             email = access.getSecond();
         } else {
-            return ResponseEntity.status(404).body(access.getSecond());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(access.getSecond());
         }
 
         User user = userRepository.findByEmail(email);
         if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user) == null) {
-            return ResponseEntity.status(409).body("The device doesn't exists.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("The device doesn't exists.");
         } else {
             deviceRepository.save(device);
-            return ResponseEntity.status(200).body("OK, the server has remembered the new device.");
+            return ResponseEntity.status(HttpStatus.OK).body("OK, the server has remembered the new device.");
         }
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<?> delete(
-            @RequestParam(required = false) String email,
-            @RequestBody Device device,
+    public ResponseEntity<?> delete(@RequestParam(required = false) String email, @RequestBody Device device,
             Authentication auth) {
         logger.info("The server received this: {}, email: {}, auth: {}", device, email, auth);
 
@@ -142,15 +136,15 @@ public class DeviceController {
         if (access.getFirst()) {
             email = access.getSecond();
         } else {
-            return ResponseEntity.status(404).body(access.getSecond());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(access.getSecond());
         }
 
         User user = userRepository.findByEmail(email);
         if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user) == null) {
-            return ResponseEntity.status(409).body("The device doesn't exists.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("The device doesn't exists.");
         } else {
             deviceRepository.delete(device);
-            return ResponseEntity.status(200).body("OK, the server has deleted the new device.");
+            return ResponseEntity.status(HttpStatus.OK).body("OK, the server has deleted the new device.");
         }
     }
 }
