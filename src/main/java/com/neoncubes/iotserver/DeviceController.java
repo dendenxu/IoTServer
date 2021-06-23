@@ -1,5 +1,7 @@
 package com.neoncubes.iotserver;
 
+import java.util.Arrays;
+
 // This can be used to create a long integer value that can be updated atomically
 
 import org.springframework.data.util.Pair;
@@ -79,7 +81,7 @@ public class DeviceController {
                 if (device == null) {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the device specified");
                 } else {
-                    return ResponseEntity.status(HttpStatus.OK).body(device);
+                    return ResponseEntity.status(HttpStatus.OK).body(Arrays.asList(device));
                 }
             }
         }
@@ -98,8 +100,10 @@ public class DeviceController {
         }
 
         User user = userRepository.findByEmail(email);
-        if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user)!= null) {
+        if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("The device already exists.");
+        } else if (deviceRepository.findByMqttId(device.getMqttId()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Device MqttId already taken by other users");
         } else {
             device.setUser(user);
             deviceRepository.save(device);
@@ -120,10 +124,14 @@ public class DeviceController {
         }
 
         User user = userRepository.findByEmail(email);
-        if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user) == null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("The device doesn't exists.");
+        Device dbDevice = deviceRepository.findByMqttIdAndUser(device.getMqttId(), user);
+        if (dbDevice == null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("The device doesn't exists. Have you changed MqttId?");
         } else {
             device.setUser(user);
+            // solve created data being null error
+            device.setCreatedDate(dbDevice.getCreatedDate());
             deviceRepository.save(device);
             return ResponseEntity.status(HttpStatus.OK).body("OK, the server has remembered the new device.");
         }

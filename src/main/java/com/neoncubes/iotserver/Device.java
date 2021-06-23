@@ -7,7 +7,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Version;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 
 import java.io.Serializable;
@@ -16,12 +15,10 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@CompoundIndex(name = "device_unique_key", def = "{'user.email' : 1, 'name' : 1}", unique = true)
 public class Device implements Serializable {
     @Id
     private String mqttId;
     private String desc;
-    // Note that the device name and user.email form another unique key
     private String name;
     @DBRef
     private User user;
