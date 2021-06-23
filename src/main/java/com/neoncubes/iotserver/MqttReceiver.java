@@ -6,6 +6,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
@@ -17,15 +18,18 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Configuration
-public class MqttReceiver {
+public class MqttReceiver implements DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(MqttReceiver.class);
 
-    @Bean
-    public MqttClient mqttClientBean(
-            @Value("${mqtt.clientId}") String clientId,
-            @Value("${mqtt.hostname}") String hostname,
-            @Value("${mqtt.port}") int port
-    ) throws MqttException {
+    private MqttClient mqttClient;
+
+    @Autowired
+    public MqttReceiver(@Value("${mqtt.clientId}") String clientId, @Value("${mqtt.hostname}") String hostname,
+            @Value("${mqtt.port}") int port) throws MqttException {
+        this.mqttClient = mqttClient(clientId, hostname, port);
+    }
+
+    public MqttClient mqttClient(String clientId, String hostname, int port) throws MqttException {
 
         logger.info("Creating the mqtt client {} with {}:{}", clientId, hostname, port);
 
@@ -40,14 +44,10 @@ public class MqttReceiver {
         return mqttClient;
     }
 
-    @Bean
     @ConfigurationProperties(prefix = "mqtt")
     public MqttConnectOptions mqttConnectOptions() {
         return new MqttConnectOptions();
     }
-
-    @Autowired
-    private MqttClient mqttClient;
 
     @Bean
     public ObjectMapper mapperBean(IoTMessageDeserializer deserializer) {
@@ -66,18 +66,15 @@ public class MqttReceiver {
     @Autowired
     private IoTMessageRepository repo;
 
-    public void publish(final String topic, final String payload, int qos, boolean retained)
-            throws MqttException {
+    public void publish(final String topic, final String payload, int qos, boolean retained) throws MqttException {
         MqttMessage mqttMessage = new MqttMessage();
         mqttMessage.setPayload(payload.getBytes());
         mqttMessage.setQos(qos);
         mqttMessage.setRetained(retained);
 
         mqttClient.publish(topic, mqttMessage);
-
-        //mqttClient.publish(topic, payload.getBytes(), qos, retained);
-
-        mqttClient.disconnect();
+        // mqttClient.publish(topic, payload.getBytes(), qos, retained);
+        // mqttClient.disconnect();
     }
 
     public void subscribe(final String topic) throws MqttException, InterruptedException {
@@ -95,5 +92,11 @@ public class MqttReceiver {
                 e.printStackTrace();
             }
         });
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        mqttClient.disconnect();
+        logger.info("Destroying the MQTT bean");
     }
 }
