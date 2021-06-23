@@ -98,9 +98,10 @@ public class DeviceController {
         }
 
         User user = userRepository.findByEmail(email);
-        if (deviceRepository.findByNameAndUser(device.getName(), user) != null) {
+        if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user)!= null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("The device already exists.");
         } else {
+            device.setUser(user);
             deviceRepository.save(device);
             return ResponseEntity.status(HttpStatus.OK).body("OK, the server has remembered this device.");
         }
@@ -122,6 +123,7 @@ public class DeviceController {
         if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user) == null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("The device doesn't exists.");
         } else {
+            device.setUser(user);
             deviceRepository.save(device);
             return ResponseEntity.status(HttpStatus.OK).body("OK, the server has remembered the new device.");
         }

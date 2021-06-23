@@ -29,6 +29,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.security.web.session.SessionManagementFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -79,11 +80,18 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(corsFilter(), EmailPasswordFilter.class)
+        http
+                .addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(corsFilter(), HeaderWriterFilter.class)
 
                 // all URLs are protected, except 'POST /login' so anonymous user can
                 // authenticate
+
+                // IMPORTANT: IF YOU WANT TO USE YOUR IMPLEMENTATION, DON'T CONFIGURE HERE
+
+                // standard logout that sends 204-NO_CONTENT when logout is OK
+                .logout().logoutUrl("/api/account/logout")
+                .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)).and()
                 .authorizeRequests().antMatchers("/api/account/**").permitAll().antMatchers(HttpMethod.OPTIONS, "/**")
                 .permitAll()
                 // allow CORS option calls
@@ -91,12 +99,6 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
 
                 // 401-UNAUTHORIZED when anonymous user tries to access protected URLs
                 .and().exceptionHandling().authenticationEntryPoint(authEntryPoint)
-
-                // IMPORTANT: IF YOU WANT TO USE YOUR IMPLEMENTATION, DON'T CONFIGURE HERE
-
-                // standard logout that sends 204-NO_CONTENT when logout is OK
-                .and().logout().logoutUrl("/api/account/logout")
-                .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT))
 
                 //// add CSRF protection to all URLs
                 // use custom filter for the default username password filter
