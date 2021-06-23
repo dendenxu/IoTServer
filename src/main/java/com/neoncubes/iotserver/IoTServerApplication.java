@@ -3,12 +3,6 @@ package com.neoncubes.iotserver;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,53 +78,10 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
     @Autowired
     private AuthEntryPoint authEntryPoint;
 
-    @Autowired
-    private MqttClient mqttClient;
-
-    @Bean
-    public ObjectMapper mapperBean(IoTMessageDeserializer deserializer) {
-        SimpleModule module = new SimpleModule();
-        module.addDeserializer(IoTMessage.class, deserializer);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(module);
-
-        return mapper;
-    }
-
-    @Autowired
-    private ObjectMapper mapper;
-
-    @Autowired
-    private IoTMessageRepository repo;
-
-    public void publish(final String topic, final String payload, int qos, boolean retained) throws MqttException {
-        MqttMessage mqttMessage = new MqttMessage();
-        mqttMessage.setPayload(payload.getBytes());
-        mqttMessage.setQos(qos);
-        mqttMessage.setRetained(retained);
-        mqttClient.publish(topic, mqttMessage);
-    }
-
-    public void subscribe(final String topic) throws MqttException, InterruptedException {
-        logger.info("[MQTT] Messages received:");
-        mqttClient.subscribeWithResponse(topic, (responseTopic, message) -> {
-            int id = message.getId();
-            String payload = new String(message.getPayload());
-            logger.info(message.getId() + " -> " + payload);
-            try {
-                IoTMessage msg = mapper.readValue(payload, IoTMessage.class);
-                logger.info("Deserialized IoTMessage: {}", msg);
-
-                repo.save(msg); // will be print an error?
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-    }
-
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+        http
+                .addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(corsFilter(), HeaderWriterFilter.class)
 
                 // all URLs are protected, except 'POST /login' so anonymous user can
@@ -149,6 +100,7 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
                 // 401-UNAUTHORIZED when anonymous user tries to access protected URLs
                 .and().exceptionHandling().authenticationEntryPoint(authEntryPoint)
 
+                //// add CSRF protection to all URLs
                 // use custom filter for the default username password filter
                 // add CSRF protection to all URLs
                 .and().csrf().disable();
@@ -161,6 +113,9 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
 
     @Autowired
     private PersonRepository repository;
+
+    @Autowired
+    private MqttReceiver receiver;
 
     public static void main(String[] args) {
         SpringApplication.run(IoTServerApplication.class, args);
@@ -193,8 +148,8 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
         people = repository.findByLastName("Heck");
         System.out.println(people);
 
-        subscribe("testapp");
-        logger.info("Subscribed to mqtt topic: {} using {}", "testapp", mqttClient);
+        receiver.subscribe("testapp");
+        logger.info("Subscribed to mqtt topic: {} using {}", "testapp", receiver);
 
     }
 }
