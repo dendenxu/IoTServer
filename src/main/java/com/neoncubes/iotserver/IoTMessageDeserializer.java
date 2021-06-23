@@ -10,8 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.support.SpringBeanAutowiringSupport;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -27,21 +25,22 @@ public class IoTMessageDeserializer extends JsonDeserializer<IoTMessage> {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-//    public IoTMessageDeserializer() {
-//        logger.info("Constructing...");
-//        // Mqtt start separate thread?
-//        // So no context will be actually found
-//        SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
-//    }
+    // public IoTMessageDeserializer() {
+    // logger.info("Constructing...");
+    // // Mqtt start separate thread?
+    // // So no context will be actually found
+    // SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
+    // }
 
     @Override
-    public IoTMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+    public IoTMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+            throws IOException, JsonProcessingException {
         IoTMessage msg = new IoTMessage();
 
         logger.info("Deserializing {} using {}, {}", jsonParser, mapper, repo);
 
         ClientMessage clientMessage = mapper.readValue(jsonParser, ClientMessage.class);
-//        ClientMessage clientMessage = new ClientMessage();
+        // ClientMessage clientMessage = new ClientMessage();
         logger.info("Got client message: {}", clientMessage);
         msg.setDevice(repo.findByMqttId(clientMessage.clientId));
         Timestamp stamp = new Timestamp(clientMessage.timestamp);
@@ -59,21 +58,20 @@ public class IoTMessageDeserializer extends JsonDeserializer<IoTMessage> {
     // Reference:
     @Data
     public static class ClientMessage implements Serializable {
-        //设备ID
+        // 设备ID
         private String clientId;
-        //上报信息
+        // 上报信息
         private String info;
-        //设备数据
+        // 设备数据
         private int value;
-        //是否告警，0-正常，1-告警
+        // 是否告警，0-正常，1-告警
         private int alert;
-        //设备位置，经度
+        // 设备位置，经度
         private double lng;
-        //设备位置，纬度
+        // 设备位置，纬度
         private double lat;
-        //上报时间，ms
+        // 上报时间，ms
         private long timestamp;
     }
-
 
 }

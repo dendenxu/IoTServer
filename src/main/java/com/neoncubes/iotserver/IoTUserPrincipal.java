@@ -4,13 +4,9 @@ import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 
 //@Component
 public class IoTUserPrincipal implements UserDetails {
@@ -37,13 +33,13 @@ public class IoTUserPrincipal implements UserDetails {
     public String getPassword() {
         logger.info("Getting password for {}", this.user);
         // TODO Auto-generated method stub
-//        return (new BCryptPasswordEncoder()).encode(this.user.getPassword());
+        // return (new BCryptPasswordEncoder()).encode(this.user.getPassword());
         return this.user.getPassword();
     }
 
     @Override
     public String getUsername() {
-//        logger.info("Getting user name for {}", this.user);
+        // logger.info("Getting user name for {}", this.user);
         // TODO Auto-generated method stub
         return this.user.getEmail();
     }

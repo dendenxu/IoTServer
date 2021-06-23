@@ -9,13 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Configuration
 public class MqttReceiver implements DisposableBean {
@@ -80,7 +77,7 @@ public class MqttReceiver implements DisposableBean {
     public void subscribe(final String topic) throws MqttException, InterruptedException {
         logger.info("[MQTT] Messages received:");
         mqttClient.subscribeWithResponse(topic, (responseTopic, message) -> {
-            int id = message.getId();
+            // int id = message.getId();
             String payload = new String(message.getPayload());
             logger.info(message.getId() + " -> " + payload);
             try {
@@ -97,6 +94,7 @@ public class MqttReceiver implements DisposableBean {
     @Override
     public void destroy() throws Exception {
         mqttClient.disconnect();
+        mqttClient.close();
         logger.info("Destroying the MQTT bean");
     }
 }

@@ -1,13 +1,10 @@
 package com.neoncubes.iotserver;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.gson.annotations.JsonAdapter;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.util.Date;
