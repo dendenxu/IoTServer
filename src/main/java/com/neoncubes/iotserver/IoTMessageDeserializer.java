@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.util.Date;
 @Component
 public class IoTMessageDeserializer extends JsonDeserializer<IoTMessage> {
 
-    private static final Logger logger = LoggerFactory.getLogger(IoTMessageDeserializer.class);
+    // private static final Logger logger = LoggerFactory.getLogger(IoTMessageDeserializer.class);
 
     @Autowired
     private DeviceRepository repo;
@@ -37,11 +37,8 @@ public class IoTMessageDeserializer extends JsonDeserializer<IoTMessage> {
             throws IOException, JsonProcessingException {
         IoTMessage msg = new IoTMessage();
 
-        logger.info("Deserializing {} using {}, {}", jsonParser, mapper, repo);
-
         ClientMessage clientMessage = mapper.readValue(jsonParser, ClientMessage.class);
         // ClientMessage clientMessage = new ClientMessage();
-        logger.info("Got client message: {}", clientMessage);
         msg.setDevice(repo.findByMqttId(clientMessage.clientId));
         Timestamp stamp = new Timestamp(clientMessage.timestamp);
         Date date = new Date(stamp.getTime());
