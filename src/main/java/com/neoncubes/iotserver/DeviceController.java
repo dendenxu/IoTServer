@@ -1,6 +1,11 @@
 package com.neoncubes.iotserver;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 // This can be used to create a long integer value that can be updated atomically
 
@@ -54,6 +59,62 @@ public class DeviceController {
                 }
             } else {
                 return Pair.of(true, auth.getName());
+            }
+        }
+    }
+
+    @Autowired
+    private ObjectMapper mapper;
+
+    @Autowired
+    private IoTMessageRepository messageRepository;
+
+    @GetMapping("/status")
+    public ResponseEntity<?> status(@RequestParam(required = false) String email,
+            @RequestParam(required = false) String name, Authentication auth) {
+        logger.info("Getting params: email: {}, name: {}, auth: {}", email, name, auth);
+
+        Pair<Boolean, String> access = processUserAccess(email, auth);
+        if (access.getFirst()) {
+            email = access.getSecond();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(access.getSecond());
+        }
+
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the user specified");
+        } else {
+            if (name == null) {
+                // return
+                // ResponseEntity.status(HttpStatus.OK).body(deviceRepository.findByUser(user));
+                List<Device> devices = deviceRepository.findByUser(user);
+                ArrayList<ObjectNode> nodes = new ArrayList<ObjectNode>();
+                devices.forEach((device) -> {
+                    IoTMessage message = messageRepository.findTopByDeviceOrderByDateDesc(device);
+
+                    logger.info("Found lastest message for this device: {}", message);
+
+                    ObjectNode deviceNode = mapper.valueToTree(device);
+                    ObjectNode node = mapper.createObjectNode();
+                    node.setAll(deviceNode);
+                    if (message != null) {
+                        message.setDevice(null);
+                        ObjectNode messageNode = mapper.valueToTree(message);
+                        messageNode.remove("device");
+                        node.setAll(messageNode);
+                    }
+                    nodes.add(node);
+                });
+                return ResponseEntity.status(HttpStatus.OK).body(nodes);
+
+            } else {
+                Device device = deviceRepository.findByNameAndUser(name, user);
+                if (device == null) {
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the device specified");
+                } else {
+                    return ResponseEntity.status(HttpStatus.OK).body(Arrays.asList(device));
+                }
             }
         }
     }
