@@ -83,8 +83,7 @@ public class MqttReceiver implements DisposableBean {
                 IoTMessage msg = mapper.readValue(payload, IoTMessage.class);
 
                 if (msg.getDevice() != null) {
-                    logger.info(message.getId() + " -> " + payload);
-                    logger.info("Deserialized IoTMessage: {}", msg);
+                    logger.debug("Deserialized IoTMessage: {}", msg);
                     // ! only messages with correpsonding device in DB will be saved
                     repo.save(msg); // will be print an error?
                 }

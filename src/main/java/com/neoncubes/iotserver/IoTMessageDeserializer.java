@@ -18,7 +18,8 @@ import java.util.Date;
 @Component
 public class IoTMessageDeserializer extends JsonDeserializer<IoTMessage> {
 
-    // private static final Logger logger = LoggerFactory.getLogger(IoTMessageDeserializer.class);
+    // private static final Logger logger =
+    // LoggerFactory.getLogger(IoTMessageDeserializer.class);
 
     @Autowired
     private DeviceRepository repo;
@@ -39,7 +40,11 @@ public class IoTMessageDeserializer extends JsonDeserializer<IoTMessage> {
 
         ClientMessage clientMessage = mapper.readValue(jsonParser, ClientMessage.class);
         // ClientMessage clientMessage = new ClientMessage();
-        msg.setDevice(repo.findByMqttId(clientMessage.clientId));
+        Device device = repo.findByMqttId(clientMessage.clientId);
+        msg.setDevice(device);
+        if (device != null) {
+            msg.setUser(device.getUser());
+        }
         Timestamp stamp = new Timestamp(clientMessage.timestamp);
         Date date = new Date(stamp.getTime());
         msg.setDate(date);

@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 // import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -16,6 +17,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document
+@CompoundIndex(def = "{'user': 1, 'date': -1}")
 @CompoundIndex(def = "{'device': 1, 'date': -1}")
 @CompoundIndex(def = "{'device.mqttId': 1, 'date': -1}")
 public class IoTMessage implements Serializable {
@@ -23,7 +25,11 @@ public class IoTMessage implements Serializable {
     private String id;
     // configurable mqtt device for this information, need to retrieve device
     @DBRef
+    @Indexed
     private Device device;
+    @DBRef
+    @Indexed
+    private User user;
     // uploaded message content
     private String info;
     // value of the uploaded information
@@ -35,5 +41,6 @@ public class IoTMessage implements Serializable {
     // latitude
     private double lat;
     // time of this upload, in ms, need to be converted from int
+    @Indexed
     private Date date;
 }
