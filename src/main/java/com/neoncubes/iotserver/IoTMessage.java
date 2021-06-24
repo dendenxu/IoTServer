@@ -16,7 +16,8 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document
-@CompoundIndex(name = "device_with_date", def = "{'device.mqttId': 1, 'date': -1}")
+@CompoundIndex(def = "{'device': 1, 'date': -1}")
+@CompoundIndex(def = "{'device.mqttId': 1, 'date': -1}")
 public class IoTMessage implements Serializable {
     @Id
     private String id;
