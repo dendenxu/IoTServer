@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 
 import java.io.Serializable;
@@ -17,6 +18,7 @@ public class IoTMessage implements Serializable {
     private String id;
     // configurable mqtt device for this information, need to retrieve device
     @DBRef
+    @Indexed
     private Device device;
     // uploaded message content
     private String info;
@@ -29,5 +31,6 @@ public class IoTMessage implements Serializable {
     // latitude
     private double lat;
     // time of this upload, in ms, need to be converted from int
+    @Indexed
     private Date date;
 }

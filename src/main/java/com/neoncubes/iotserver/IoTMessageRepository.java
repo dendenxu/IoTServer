@@ -14,5 +14,5 @@ public interface IoTMessageRepository extends MongoRepository<IoTMessage, String
     List<IoTMessage> findByDeviceMqttId(@Param("device.mqttId") String mqttId);
 
     // @Query(value = "{ 'device' : ?0, $limit: 1 }", sort = "{ 'date' : -1 }")
-    IoTMessage findTopByDeviceOrderByDateDesc(@Param("device") Device device);
+    IoTMessage findTopByDeviceMqttIdOrderByDateDesc(@Param("device.mqttId") String mqttId);
 }

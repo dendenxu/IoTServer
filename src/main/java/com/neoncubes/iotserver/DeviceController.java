@@ -91,7 +91,7 @@ public class DeviceController {
                 List<Device> devices = deviceRepository.findByUser(user);
                 ArrayList<ObjectNode> nodes = new ArrayList<ObjectNode>();
                 devices.forEach((device) -> {
-                    IoTMessage message = messageRepository.findTopByDeviceOrderByDateDesc(device);
+                    IoTMessage message = messageRepository.findTopByDeviceMqttIdOrderByDateDesc(device.getMqttId());
 
                     logger.info("Found lastest message for this device: {}", message);
 
