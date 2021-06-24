@@ -121,8 +121,8 @@ public class DeviceController {
 
     @GetMapping("/query")
     public ResponseEntity<?> query(@RequestParam(required = false) String email,
-            @RequestParam(required = false) String name, Authentication auth) {
-        logger.info("Getting params: email: {}, name: {}, auth: {}", email, name, auth);
+            @RequestParam(required = false) String mqttId, Authentication auth) {
+        logger.info("Getting params: email: {}, mqttId: {}, auth: {}", email, mqttId, auth);
 
         Pair<Boolean, String> access = processUserAccess(email, auth);
         if (access.getFirst()) {
@@ -135,14 +135,15 @@ public class DeviceController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the user specified");
         } else {
-            if (name == null) {
+            if (mqttId == null) {
                 return ResponseEntity.status(HttpStatus.OK).body(deviceRepository.findByUser(user));
             } else {
-                Device device = deviceRepository.findByNameAndUser(name, user);
+                Device device = deviceRepository.findByMqttIdAndUser(mqttId, user);
                 if (device == null) {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the device specified");
                 } else {
-                    return ResponseEntity.status(HttpStatus.OK).body(Arrays.asList(device));
+                    return ResponseEntity.status(HttpStatus.OK).body(device);
+                    // return ResponseEntity.status(HttpStatus.OK).body(Arrays.asList(device));
                 }
             }
         }
