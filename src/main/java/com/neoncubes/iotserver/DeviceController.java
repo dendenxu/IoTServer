@@ -71,8 +71,8 @@ public class DeviceController {
 
     @GetMapping("/status")
     public ResponseEntity<?> status(@RequestParam(required = false) String email,
-            @RequestParam(required = false) String name, Authentication auth) {
-        logger.info("Getting params: email: {}, name: {}, auth: {}", email, name, auth);
+            @RequestParam(required = false) String mqttId, Authentication auth) {
+        logger.info("Getting params: email: {}, mqttId: {}, auth: {}", email, mqttId, auth);
 
         Pair<Boolean, String> access = processUserAccess(email, auth);
         if (access.getFirst()) {
@@ -85,7 +85,7 @@ public class DeviceController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the user specified");
         } else {
-            if (name == null) {
+            if (mqttId == null) {
                 // return
                 // ResponseEntity.status(HttpStatus.OK).body(deviceRepository.findByUser(user));
                 List<Device> devices = deviceRepository.findByUser(user);
@@ -109,11 +109,24 @@ public class DeviceController {
                 return ResponseEntity.status(HttpStatus.OK).body(nodes);
 
             } else {
-                Device device = deviceRepository.findByNameAndUser(name, user);
+                Device device = deviceRepository.findByMqttIdAndUser(mqttId, user);
                 if (device == null) {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the device specified");
                 } else {
-                    return ResponseEntity.status(HttpStatus.OK).body(Arrays.asList(device));
+                    IoTMessage message = messageRepository.findTopByDeviceMqttIdOrderByDateDesc(device.getMqttId());
+
+                    logger.info("Found lastest message for this device: {}", message);
+
+                    ObjectNode deviceNode = mapper.valueToTree(device);
+                    ObjectNode node = mapper.createObjectNode();
+                    node.setAll(deviceNode);
+                    if (message != null) {
+                        message.setDevice(null);
+                        ObjectNode messageNode = mapper.valueToTree(message);
+                        messageNode.remove("device");
+                        node.setAll(messageNode);
+                    }
+                    return ResponseEntity.status(HttpStatus.OK).body(node);
                 }
             }
         }
@@ -143,7 +156,6 @@ public class DeviceController {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the device specified");
                 } else {
                     return ResponseEntity.status(HttpStatus.OK).body(device);
-                    // return ResponseEntity.status(HttpStatus.OK).body(Arrays.asList(device));
                 }
             }
         }
