@@ -24,12 +24,10 @@ public class IoTMessage implements Serializable {
     @Id
     private String id;
     // configurable mqtt device for this information, need to retrieve device
-    @DBRef
     @Indexed
-    private Device device;
-    @DBRef
+    private String mqttId;
     @Indexed
-    private User user;
+    private String email;
     // uploaded message content
     private String info;
     // value of the uploaded information

@@ -9,7 +9,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.Indexed;
 // import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
@@ -24,9 +23,8 @@ public class Device implements Serializable {
     private String mqttId;
     private String desc;
     private String name;
-    @DBRef
     @Indexed
-    private User user;
+    private String email;
 
     @Version
     public Integer version;
@@ -49,12 +47,12 @@ public class Device implements Serializable {
     @LastModifiedDate
     private Date lastModifiedDate;
 
-    public Device(String mqttId, String name, String desc, Device.DeviceType[] type, User user) {
+    public Device(String mqttId, String name, String desc, Device.DeviceType[] type, String userEmail) {
         this.mqttId = mqttId;
         this.name = name;
         this.desc = desc;
         this.type = type;
-        this.user = user;
+        this.email = userEmail;
     }
 
     private Boolean online;

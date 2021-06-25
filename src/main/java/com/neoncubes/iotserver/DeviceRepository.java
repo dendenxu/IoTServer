@@ -8,13 +8,13 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource(collectionResourceRel = "device", path = "device")
 public interface DeviceRepository extends MongoRepository<Device, String> {
-    List<Device> findByType(@Param("type") Device.DeviceType type);
+    List<Device> findByType(Device.DeviceType type);
 
-    Device findByMqttId(@Param("mqttId") String mqttId);
+    Device findByMqttId(String mqttId);
 
-    Device findByNameAndUser(@Param("name") String name, @Param("user") User user);
+    Device findByNameAndEmail(String name, String email);
 
-    Device findByMqttIdAndUser(@Param("mqttId") String mqttId, @Param("user") User user);
+    Device findByMqttIdAndEmail(String mqttId, String email);
 
-    List<Device> findByUser(@Param("user") User user);
+    List<Device> findByEmail(String email);
 }

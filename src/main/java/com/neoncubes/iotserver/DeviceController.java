@@ -72,7 +72,7 @@ public class DeviceController {
 
     @GetMapping("/status")
     public ResponseEntity<?> status(@RequestParam(required = false) String email,
-            @RequestParam(required = false) String mqttId, Authentication auth) {
+                                    @RequestParam(required = false) String mqttId, Authentication auth) {
         logger.info("Getting params: email: {}, mqttId: {}, auth: {}", email, mqttId, auth);
 
         Pair<Boolean, String> access = processUserAccess(email, auth);
@@ -89,20 +89,19 @@ public class DeviceController {
             if (mqttId == null) {
                 // return
                 // ResponseEntity.status(HttpStatus.OK).body(deviceRepository.findByUser(user));
-                List<Device> devices = deviceRepository.findByUser(user);
+                List<Device> devices = deviceRepository.findByEmail(user.getEmail());
                 ArrayList<ObjectNode> nodes = new ArrayList<ObjectNode>();
                 devices.forEach((device) -> {
-                    IoTMessage message = messageRepository.findTopByDeviceMqttIdOrderByDateDesc(device.getMqttId());
+                    IoTMessage message = messageRepository.findTopByMqttIdOrderByDateDesc(device.getMqttId());
 
-                    logger.info("Found lastest message for this device: {}", message);
+                    logger.info("Found latest message for this device: {}", message);
 
                     ObjectNode deviceNode = mapper.valueToTree(device);
                     ObjectNode node = mapper.createObjectNode();
                     node.setAll(deviceNode);
                     if (message != null) {
-                        message.setDevice(null);
                         ObjectNode messageNode = mapper.valueToTree(message);
-                        messageNode.remove("device");
+                        messageNode.remove("mqttId");
                         node.setAll(messageNode);
                     }
                     nodes.add(node);
@@ -110,11 +109,11 @@ public class DeviceController {
                 return ResponseEntity.status(HttpStatus.OK).body(nodes);
 
             } else {
-                Device device = deviceRepository.findByMqttIdAndUser(mqttId, user);
+                Device device = deviceRepository.findByMqttIdAndEmail(mqttId, user.getEmail());
                 if (device == null) {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the device specified");
                 } else {
-                    IoTMessage message = messageRepository.findTopByDeviceMqttIdOrderByDateDesc(device.getMqttId());
+                    IoTMessage message = messageRepository.findTopByMqttIdOrderByDateDesc(device.getMqttId());
 
                     logger.info("Found lastest message for this device: {}", message);
 
@@ -122,7 +121,7 @@ public class DeviceController {
                     ObjectNode node = mapper.createObjectNode();
                     node.setAll(deviceNode);
                     if (message != null) {
-                        message.setDevice(null);
+                        message.setMqttId(null);
                         ObjectNode messageNode = mapper.valueToTree(message);
                         messageNode.remove("device");
                         node.setAll(messageNode);
@@ -135,7 +134,7 @@ public class DeviceController {
 
     @GetMapping("/query")
     public ResponseEntity<?> query(@RequestParam(required = false) String email,
-            @RequestParam(required = false) String mqttId, Authentication auth) {
+                                   @RequestParam(required = false) String mqttId, Authentication auth) {
         logger.info("Getting params: email: {}, mqttId: {}, auth: {}", email, mqttId, auth);
 
         Pair<Boolean, String> access = processUserAccess(email, auth);
@@ -150,9 +149,9 @@ public class DeviceController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the user specified");
         } else {
             if (mqttId == null) {
-                return ResponseEntity.status(HttpStatus.OK).body(deviceRepository.findByUser(user));
+                return ResponseEntity.status(HttpStatus.OK).body(deviceRepository.findByEmail(user.getEmail()));
             } else {
-                Device device = deviceRepository.findByMqttIdAndUser(mqttId, user);
+                Device device = deviceRepository.findByMqttIdAndEmail(mqttId, user.getEmail());
                 if (device == null) {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the device specified");
                 } else {
@@ -164,7 +163,7 @@ public class DeviceController {
 
     @PostMapping("/create")
     public ResponseEntity<?> register(@RequestParam(required = false) String email, @RequestBody Device device,
-            Authentication auth) {
+                                      Authentication auth) {
         logger.info("The server received this: {}, email: {}, auth: {}", device, email, auth);
 
         Pair<Boolean, String> access = processUserAccess(email, auth);
@@ -175,12 +174,12 @@ public class DeviceController {
         }
 
         User user = userRepository.findByEmail(email);
-        if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user) != null) {
+        if (deviceRepository.findByMqttIdAndEmail(device.getMqttId(), user.getEmail()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("The device already exists.");
         } else if (deviceRepository.findByMqttId(device.getMqttId()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Device MqttId already taken by other users");
         } else {
-            device.setUser(user);
+            device.setEmail(user.getEmail());
             deviceRepository.save(device);
             return ResponseEntity.status(HttpStatus.OK).body("OK, the server has remembered this device.");
         }
@@ -195,7 +194,7 @@ public class DeviceController {
     // everything will be rewritten (excluding online/offline status)
     @PatchMapping("/replace")
     public ResponseEntity<?> replace(@RequestParam(required = false) String email, @RequestBody Device device,
-            Authentication auth) {
+                                     Authentication auth) {
         logger.info("The server received this: {}, email: {}, auth: {}", device, email, auth);
 
         Pair<Boolean, String> access = processUserAccess(email, auth);
@@ -209,12 +208,12 @@ public class DeviceController {
 
         Transaction tx = () -> {
             User user = userRepository.findByEmail(finalEmail);
-            Device dbDevice = deviceRepository.findByMqttIdAndUser(device.getMqttId(), user);
+            Device dbDevice = deviceRepository.findByMqttIdAndEmail(device.getMqttId(), user.getEmail());
             if (dbDevice == null) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
                         .body("The device doesn't exists. Have you changed MqttId?");
             } else {
-                device.setUser(user);
+                device.setEmail(user.getEmail());
                 // solve created data being null error
                 device.setCreatedDate(dbDevice.getCreatedDate());
                 device.setVersion(dbDevice.getVersion());
@@ -229,7 +228,7 @@ public class DeviceController {
 
     @DeleteMapping("/delete")
     public ResponseEntity<?> delete(@RequestParam(required = false) String email, @RequestBody Device device,
-            Authentication auth) {
+                                    Authentication auth) {
         logger.info("The server received this: {}, email: {}, auth: {}", device, email, auth);
 
         Pair<Boolean, String> access = processUserAccess(email, auth);
@@ -240,7 +239,7 @@ public class DeviceController {
         }
 
         User user = userRepository.findByEmail(email);
-        if (deviceRepository.findByMqttIdAndUser(device.getMqttId(), user) == null) {
+        if (deviceRepository.findByMqttIdAndEmail(device.getMqttId(), user.getEmail()) == null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("The device doesn't exists.");
         } else {
             deviceRepository.delete(device);

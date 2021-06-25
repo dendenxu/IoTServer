@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class MqttReceiver implements DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(MqttReceiver.class);
 
-    private MqttClient mqttClient;
+    private final MqttClient mqttClient;
 
     @Autowired
     public MqttReceiver(@Value("${mqtt.clientId}") String clientId, @Value("${mqtt.hostname}") String hostname,

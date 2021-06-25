@@ -12,17 +12,15 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource(collectionResourceRel = "message", path = "message")
 public interface IoTMessageRepository extends MongoRepository<IoTMessage, String> {
-    List<IoTMessage> findByDevice(@Param("device") Device device);
+    Page<IoTMessage> findByEmailOrderByDateDesc(String email, Pageable pageable);
 
-    @Query(value = "{ 'user.email': ?0 }", fields = "{ 'value' : 1, 'alert' : 1, 'date' : 1, 'lat' : 1, 'lng' : 1, 'info' : 1, 'device.mqttId' : 1 }", sort = "{ 'date': -1 }")
-    Page<IoTMessage> findByUserEmail(String email, Pageable pageable);
+    Page<IoTMessage> findByEmail(String email, Pageable pageable);
 
-    @Query(value = "{ 'user.email': ?0 }", fields = "{ 'value' : 1, 'alert' : 1, 'date' : 1, 'lat' : 1, 'lng' : 1, 'info' : 1, 'device.mqttId' : 1 }", sort = "{ 'date': -1 }")
-    List<IoTMessage> findByUserEmailDirectList(String email);
+    List<IoTMessage> findByEmailOrderByDateDesc(String email);
 
-    List<IoTMessage> findByDeviceMqttId(@Param("device.mqttId") String mqttId);
+    List<IoTMessage> findByEmail(String email);
 
-    Page<IoTMessage> findByDeviceIn(List<Device> devices, Pageable pageable);
+    List<IoTMessage> findByMqttId(@Param("device.mqttId") String mqttId);
 
-    IoTMessage findTopByDeviceMqttIdOrderByDateDesc(@Param("device.mqttId") String mqttId);
+    IoTMessage findTopByMqttIdOrderByDateDesc(@Param("device.mqttId") String mqttId);
 }

@@ -49,12 +49,9 @@ public class IoTMqttManager {
     private IoTMessage client2server(ClientMessage cli) {
         IoTMessage msg = new IoTMessage();
 
-        // ClientMessage clientMessage = new ClientMessage();
-        Device device = deviceRepository.findByMqttId(cli.getClientId());
-        msg.setDevice(device);
-        if (device != null) {
-            msg.setUser(device.getUser());
-        }
+
+
+        msg.setMqttId(cli.getClientId());
         Timestamp stamp = new Timestamp(cli.getTimestamp());
         Date date = new Date(stamp.getTime());
         msg.setDate(date);
@@ -75,14 +72,15 @@ public class IoTMqttManager {
             logger.info("Receiving payload {} from topic {}", payload, topic);
             try {
                 IoTMessage msg = client2server(mapper.readValue(payload, ClientMessage.class));
-                Device device = msg.getDevice();
+                Device device = deviceRepository.findByMqttId(msg.getMqttId());
                 if (device != null) {
+                    msg.setEmail(device.getEmail());
                     // ! these's also an optimistic lock
                     if (topic.equals(this.lastwilltopic) || topic.equals(this.disconnecttopic)) {
                         device.setOnline(false);
                         deviceRepository.save(device);
                         logger.warn("This device disconnects: {}", device);
-                    } else if (topic.equals(this.connecttopic)) {
+                    } else if (topic.equals(this.connecttopic) || !device.getOnline()) {
                         device.setOnline(true);
                         deviceRepository.save(device);
                         logger.warn("This device connects: {}", device);
@@ -97,9 +95,7 @@ public class IoTMqttManager {
             }
         };
 
-        IMqttMessageListener handleMessage = (topic, message) -> {
-            handler.handle(topic, message);
-        };
+        IMqttMessageListener handleMessage = handler::handle;
 
         receiver.subscribe(messagetopic, handleMessage);
         receiver.subscribe(connecttopic, handleMessage);

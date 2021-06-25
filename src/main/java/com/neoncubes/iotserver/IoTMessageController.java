@@ -90,7 +90,7 @@ public class IoTMessageController {
 
                 if (page == null || size == null) {
                     logger.info("Trying to find the messages for {}", user);
-                    List<IoTMessage> messages = messageRepository.findByUserEmailDirectList(user.getEmail());
+                    List<IoTMessage> messages = messageRepository.findByEmailOrderByDateDesc(user.getEmail());
                     logger.info("Found theses messages: {}", messages.size());
 
                     return ResponseEntity.status(HttpStatus.OK).body(messages);
@@ -102,7 +102,7 @@ public class IoTMessageController {
 
                     PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
                     // Page<IoTMessage> pages = messageRepository.findByDeviceIn(devices, request);
-                    Page<IoTMessage> pages = messageRepository.findByUserEmail(user.getEmail(), request);
+                    Page<IoTMessage> pages = messageRepository.findByEmailOrderByDateDesc(user.getEmail(), request);
 
                     logger.info("Got pages: {}", pages);
 
@@ -113,7 +113,7 @@ public class IoTMessageController {
                 }
 
             } else {
-                return ResponseEntity.status(HttpStatus.OK).body(messageRepository.findByDeviceMqttId(mqttId));
+                return ResponseEntity.status(HttpStatus.OK).body(messageRepository.findByMqttId(mqttId));
             }
         }
     }
