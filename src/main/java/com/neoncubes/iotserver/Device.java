@@ -57,5 +57,5 @@ public class Device implements Serializable {
         this.user = user;
     }
 
-    private boolean online;
+    private Boolean online;
 }

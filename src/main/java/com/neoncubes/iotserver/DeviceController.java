@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.data.util.Pair;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -185,6 +186,13 @@ public class DeviceController {
         }
     }
 
+    private static interface Transaction {
+        @Transactional
+        Object operate();
+    }
+
+    // ! this skips the optimistic locking
+    // everything will be rewritten (excluding online/offline status)
     @PatchMapping("/replace")
     public ResponseEntity<?> replace(@RequestParam(required = false) String email, @RequestBody Device device,
             Authentication auth) {
@@ -197,18 +205,26 @@ public class DeviceController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(access.getSecond());
         }
 
-        User user = userRepository.findByEmail(email);
-        Device dbDevice = deviceRepository.findByMqttIdAndUser(device.getMqttId(), user);
-        if (dbDevice == null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("The device doesn't exists. Have you changed MqttId?");
-        } else {
-            device.setUser(user);
-            // solve created data being null error
-            device.setCreatedDate(dbDevice.getCreatedDate());
-            deviceRepository.save(device);
-            return ResponseEntity.status(HttpStatus.OK).body("OK, the server has remembered the new device.");
-        }
+        final String finalEmail = email;
+
+        Transaction tx = () -> {
+            User user = userRepository.findByEmail(finalEmail);
+            Device dbDevice = deviceRepository.findByMqttIdAndUser(device.getMqttId(), user);
+            if (dbDevice == null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("The device doesn't exists. Have you changed MqttId?");
+            } else {
+                device.setUser(user);
+                // solve created data being null error
+                device.setCreatedDate(dbDevice.getCreatedDate());
+                device.setVersion(dbDevice.getVersion());
+                device.setOnline(dbDevice.getOnline());
+                deviceRepository.save(device);
+                return ResponseEntity.status(HttpStatus.OK).body("OK, the server has remembered the new device.");
+            }
+        };
+
+        return (ResponseEntity<?>) tx.operate();
     }
 
     @DeleteMapping("/delete")
