@@ -1,7 +1,5 @@
 package com.neoncubes.iotserver;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
@@ -10,11 +8,9 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
 
-@Configuration
+@Component
 public class MqttReceiver implements DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(MqttReceiver.class);
 
@@ -46,23 +42,6 @@ public class MqttReceiver implements DisposableBean {
         return new MqttConnectOptions();
     }
 
-    @Bean
-    public ObjectMapper mapperBean(IoTMessageDeserializer deserializer) {
-        SimpleModule module = new SimpleModule();
-        module.addDeserializer(IoTMessage.class, deserializer);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(module);
-
-        return mapper;
-    }
-
-    @Lazy
-    @Autowired
-    private ObjectMapper mapper;
-
-    @Autowired
-    private IoTMessageRepository repo;
-
     public void publish(final String topic, final String payload, int qos, boolean retained) throws MqttException {
         MqttMessage mqttMessage = new MqttMessage();
         mqttMessage.setPayload(payload.getBytes());
@@ -70,27 +49,11 @@ public class MqttReceiver implements DisposableBean {
         mqttMessage.setRetained(retained);
 
         mqttClient.publish(topic, mqttMessage);
-        // mqttClient.publish(topic, payload.getBytes(), qos, retained);
-        // mqttClient.disconnect();
     }
 
-    public void subscribe(final String topic) throws MqttException, InterruptedException {
-        logger.info("[MQTT] Messages received:");
-        mqttClient.subscribeWithResponse(topic, (responseTopic, message) -> {
-            // int id = message.getId();
-            String payload = new String(message.getPayload());
-            try {
-                IoTMessage msg = mapper.readValue(payload, IoTMessage.class);
-
-                if (msg.getDevice() != null) {
-                    logger.debug("Deserialized IoTMessage: {}", msg);
-                    // ! only messages with correpsonding device in DB will be saved
-                    repo.save(msg); // will be print an error?
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+    public void subscribe(final String topic, IMqttMessageListener listener)
+            throws MqttException, InterruptedException {
+        mqttClient.subscribeWithResponse(topic, listener);
     }
 
     @Override

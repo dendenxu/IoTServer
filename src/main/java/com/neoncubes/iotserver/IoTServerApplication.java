@@ -2,6 +2,8 @@ package com.neoncubes.iotserver;
 
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.MongoTransactionManager;
 
 /**
  * This is a convenience annotation that adds
@@ -71,6 +76,9 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
     @Autowired
     private AuthEntryPoint authEntryPoint;
 
+    @Autowired
+    private IoTMqttManager manager;
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
@@ -106,8 +114,15 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
     @Autowired
     private PersonRepository repository;
 
-    @Autowired
-    private MqttReceiver receiver;
+    @Bean
+    public ObjectMapper mapperBean() {
+        return new ObjectMapper();
+    }
+
+    @Bean
+    MongoTransactionManager transactionManager(MongoDatabaseFactory dbFactory) {
+        return new MongoTransactionManager(dbFactory);
+    }
 
     public static void main(String[] args) {
         SpringApplication.run(IoTServerApplication.class, args);
@@ -116,6 +131,8 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
 
     @Override
     public void run(String... args) throws Exception {
+
+        manager.subscribe();
 
         repository.deleteAll();
 
@@ -139,9 +156,6 @@ public class IoTServerApplication extends WebSecurityConfigurerAdapter implement
         System.out.println("Customer found with findByLastName('Heck')");
         people = repository.findByLastName("Heck");
         System.out.println(people);
-
-        receiver.subscribe("testapp");
-        logger.info("Subscribed to mqtt topic: {} using {}", "testapp", receiver);
 
     }
 }
