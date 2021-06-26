@@ -130,7 +130,8 @@ public class IoTMessageController {
             @RequestParam(required = false) Date toDate, @RequestParam(required = false) Long fromMills,
             @RequestParam(required = false) Long toMills, @RequestParam(required = false) Boolean aggregate,
             Authentication auth) {
-        logger.info("Getting params: email: {}, mqttId: {}, auth: {}", email, mqttId, auth);
+        logger.info("Getting params: {}, {}, {}, {}, {}, {}, {}, {}", email, mqttId, fromDate, toDate, fromMills,
+                toMills, aggregate, auth);
 
         Pair<Boolean, String> access = processUserAccess(email, auth);
         if (access.getFirst()) {
