@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.springframework.data.domain.Page;
@@ -43,12 +44,12 @@ public class IoTMessageController {
     // @Autowired
     // private ObjectMapper mapper;
 
-    @Autowired
-    private UserRepository userRepository;
+    // @Autowired
+    // private UserRepository userRepository;
     @Autowired
     private IoTMessageRepository messageRepository;
-    // @Autowired
-    // private DeviceRepository deviceRepository;
+    @Autowired
+    private DeviceRepository deviceRepository;
 
     private Pair<Boolean, String> processUserAccess(String email, Authentication auth) {
         if (auth == null) {
@@ -87,40 +88,34 @@ public class IoTMessageController {
         }
 
         logger.info("Updated email from authorization: {}", email);
-        User user = userRepository.findByEmail(email);
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the user specified");
-        } else {
-            if (mqttId == null) {
 
-                if (page == null || size == null) {
-                    logger.info("Trying to find the messages for {}", user);
-                    Stream<IoTMessage> messages = messageRepository.findStreamByEmailOrderByDateDesc(user.getEmail(),
-                            null);
-                    logger.info("Found theses messages: {}", messages.count());
+        if (mqttId == null) {
 
-                    return ResponseEntity.status(HttpStatus.OK).body(messages);
+            if (page == null || size == null) {
+                Stream<IoTMessage> messages = messageRepository.findStreamByEmailOrderByDateDesc(email, null);
+                logger.info("Found theses messages: {}", messages.count());
 
-                } else {
-
-                    // List<Device> devices = deviceRepository.findByUser(user);
-                    // logger.info("Found devices: {}", devices);
-
-                    PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
-                    // Page<IoTMessage> pages = messageRepository.findByDeviceIn(devices, request);
-                    Page<IoTMessage> pages = messageRepository.findPageByEmailOrderByDateDesc(user.getEmail(), request);
-
-                    logger.info("Got pages: {}", pages);
-
-                    List<IoTMessage> messages = pages.getContent();
-                    logger.info("Got messages: {}", messages);
-
-                    return ResponseEntity.status(HttpStatus.OK).body(messages);
-                }
+                return ResponseEntity.status(HttpStatus.OK).body(messages);
 
             } else {
-                return ResponseEntity.status(HttpStatus.OK).body(messageRepository.findByMqttId(mqttId));
+
+                // List<Device> devices = deviceRepository.findByUser(user);
+                // logger.info("Found devices: {}", devices);
+
+                PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
+                // Page<IoTMessage> pages = messageRepository.findByDeviceIn(devices, request);
+                Page<IoTMessage> pages = messageRepository.findPageByEmailOrderByDateDesc(email, request);
+
+                logger.info("Got pages: {}", pages);
+
+                List<IoTMessage> messages = pages.getContent();
+                logger.info("Got messages: {}", messages);
+
+                return ResponseEntity.status(HttpStatus.OK).body(messages);
             }
+
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(messageRepository.findByMqttId(mqttId));
         }
     }
 
@@ -143,39 +138,93 @@ public class IoTMessageController {
         }
 
         logger.info("Updated email from authorization: {}", email);
-        User user = userRepository.findByEmail(email);
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the user specified");
-        } else {
-            ObjectNode node = mapper.createObjectNode();
-            Long count;
 
-            // Currently only support both of the parameters provided
-            if (fromMills == null || toMills == null) {
-                if (fromDate == null || toDate == null) {
+        ObjectNode node = mapper.createObjectNode();
+        Long count;
 
-                    if (mqttId == null) {
-                        count = messageRepository.countByEmail(email);
-                    } else {
-                        count = messageRepository.countByMqttId(mqttId);
-                    }
+        // Currently only support both of the parameters provided
+        if (fromMills == null || toMills == null) {
+            if (fromDate == null || toDate == null) {
+
+                if (mqttId == null) {
+                    count = messageRepository.countByEmail(email);
                 } else {
-                    if (mqttId == null) {
-                        count = messageRepository.countByEmailAndDateBetween(email, fromDate, toDate);
-                    } else {
-                        count = messageRepository.countByMqttIdAndDateBetween(mqttId, fromDate, toDate);
-                    }
+                    count = messageRepository.countByMqttId(mqttId);
                 }
             } else {
                 if (mqttId == null) {
-                    count = messageRepository.countByEmailAndDateBetween(email, new Date(fromMills), new Date(toMills));
+                    count = messageRepository.countByEmailAndDateBetween(email, fromDate, toDate);
                 } else {
-                    count = messageRepository.countByMqttIdAndDateBetween(mqttId, new Date(fromMills),
-                            new Date(toMills));
+                    count = messageRepository.countByMqttIdAndDateBetween(mqttId, fromDate, toDate);
                 }
             }
-            node.put("count", count);
-            return ResponseEntity.status(HttpStatus.OK).body(node);
+        } else {
+            if (mqttId == null) {
+                count = messageRepository.countByEmailAndDateBetween(email, new Date(fromMills), new Date(toMills));
+            } else {
+                count = messageRepository.countByMqttIdAndDateBetween(mqttId, new Date(fromMills), new Date(toMills));
+            }
         }
+        node.put("count", count);
+        return ResponseEntity.status(HttpStatus.OK).body(node);
+    }
+
+    // http://localhost:8080/api/message/count?mqttId=device0000&fromMills=1624666885920&toMills=1624684885920
+    @GetMapping("/detailcount")
+    public ResponseEntity<?> detailcount(@RequestParam(required = false) String email, @RequestParam long fromMills,
+            @RequestParam long toMills, @RequestParam(required = false, defaultValue = "1") Integer tick,
+            Authentication auth) {
+
+        Pair<Boolean, String> access = processUserAccess(email, auth);
+        if (access.getFirst()) {
+            email = access.getSecond();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(access.getSecond());
+        }
+
+        logger.info("Updated email from authorization: {}", email);
+
+        // ObjectNode node = mapper.createObjectNode();
+        ArrayNode array = mapper.createArrayNode();
+
+        // Currently only support both of the parameters provided
+
+        logger.info("Counting from {} to {} with tick: {}", fromMills, toMills, tick);
+
+        long spand = toMills - fromMills;
+        long interval = spand / tick;
+
+        if (spand <= 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Pls provide a valid fromMills and toMills");
+        } else if (interval <= 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid time interval, are you providing a negative tick?");
+        } else {
+            List<Device> devices = deviceRepository.findByEmail(email);
+
+            for (Device device : devices) {
+                ObjectNode deviceNode = mapper.createObjectNode();
+                deviceNode.put("id", device.getMqttId());
+                ArrayNode data = mapper.createArrayNode();
+                deviceNode.set("data", data);
+
+                for (int i = 0; i < tick; i++) {
+                    long start = fromMills + i * interval;
+                    long end = start + interval;
+                    Date from = new Date(start);
+                    Date to = new Date(end);
+                    long count = messageRepository.countByMqttIdAndDateBetween(device.getMqttId(), from, to);
+                    ObjectNode node = mapper.createObjectNode();
+                    node.put("x", from.toString());
+                    node.put("y", count);
+                    data.add(node);
+                }
+
+                array.add(deviceNode);
+            }
+
+            return ResponseEntity.status(HttpStatus.OK).body(array);
+        }
+
     }
 }
