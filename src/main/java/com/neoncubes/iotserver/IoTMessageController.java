@@ -128,7 +128,8 @@ public class IoTMessageController {
     public ResponseEntity<?> count(@RequestParam(required = false) String email,
             @RequestParam(required = false) String mqttId, @RequestParam(required = false) Date fromDate,
             @RequestParam(required = false) Date toDate, @RequestParam(required = false) Long fromMills,
-            @RequestParam(required = false) Long toMills, Authentication auth) {
+            @RequestParam(required = false) Long toMills, @RequestParam(required = false) Boolean aggregate,
+            Authentication auth) {
         logger.info("Getting params: email: {}, mqttId: {}, auth: {}", email, mqttId, auth);
 
         Pair<Boolean, String> access = processUserAccess(email, auth);
@@ -140,34 +141,95 @@ public class IoTMessageController {
 
         logger.info("Updated email from authorization: {}", email);
 
-        ObjectNode node = mapper.createObjectNode();
-        Long count;
+        ArrayNode array = mapper.createArrayNode();
 
         // Currently only support both of the parameters provided
-        if (fromMills == null || toMills == null) {
-            if (fromDate == null || toDate == null) {
 
-                if (mqttId == null) {
-                    count = messageRepository.countByEmail(email);
-                } else {
-                    count = messageRepository.countByMqttId(mqttId);
-                }
+        if (fromDate == null || toDate == null) {
+            if (fromMills == null || toMills == null) {
+                logger.info("User didn't have specified any datetime info");
             } else {
-                if (mqttId == null) {
-                    count = messageRepository.countByEmailAndDateBetween(email, fromDate, toDate);
-                } else {
-                    count = messageRepository.countByMqttIdAndDateBetween(mqttId, fromDate, toDate);
-                }
+                fromDate = new Date(fromMills);
+                toDate = new Date(toMills);
+                logger.info("User want to query with timestamp, converted to date");
             }
         } else {
-            if (mqttId == null) {
-                count = messageRepository.countByEmailAndDateBetween(email, new Date(fromMills), new Date(toMills));
+            if (fromMills == null || toMills == null) {
+                logger.info("User want to query with date object");
             } else {
-                count = messageRepository.countByMqttIdAndDateBetween(mqttId, new Date(fromMills), new Date(toMills));
+                logger.warn("Conflicting query parameters");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Conflicting query parameters, you can only specify one set of them");
             }
         }
-        node.put("count", count);
-        return ResponseEntity.status(HttpStatus.OK).body(node);
+
+        if (fromDate == null || toDate == null) {
+            if (mqttId == null) {
+                if (aggregate != null && aggregate) {
+                    List<Device> devices = deviceRepository.findByEmail(email);
+                    devices.forEach((device) -> {
+                        String deviceid = device.getMqttId(); // ! annoying redeclration problem
+                        ObjectNode node = mapper.createObjectNode();
+                        node.put("id", deviceid);
+                        node.put("label", deviceid);
+                        node.put("value", messageRepository.countByMqttId(deviceid));
+                        array.add(node);
+                    });
+                } else {
+                    ObjectNode node = mapper.createObjectNode();
+                    node.put("id", email);
+                    node.put("label", email);
+                    node.put("value", messageRepository.countByEmail(email));
+                    array.add(node);
+                }
+            } else {
+                ObjectNode node = mapper.createObjectNode();
+                node.put("id", mqttId);
+                node.put("label", mqttId);
+                node.put("value", messageRepository.countByMqttId(mqttId));
+                array.add(node);
+
+            }
+        } else {
+
+            if (fromDate.after(toDate)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("FromDate is later than toDate, not OK, brother...");
+            }
+
+            if (mqttId == null) {
+                if (aggregate != null && aggregate) {
+                    List<Device> devices = deviceRepository.findByEmail(email);
+                    final Date finalFromDate = fromDate;
+                    final Date finalToDate = toDate;
+                    devices.forEach((device) -> {
+                        String deviceid = device.getMqttId(); // ! annoying redeclration problem
+                        ObjectNode node = mapper.createObjectNode();
+                        node.put("id", deviceid);
+                        node.put("label", deviceid);
+                        node.put("value",
+                                messageRepository.countByMqttIdAndDateBetween(deviceid, finalFromDate, finalToDate));
+                        array.add(node);
+                    });
+                } else {
+                    ObjectNode node = mapper.createObjectNode();
+
+                    node.put("id", email);
+                    node.put("label", email);
+                    node.put("value", messageRepository.countByEmailAndDateBetween(email, fromDate, toDate));
+                    array.add(node);
+
+                }
+            } else {
+                ObjectNode node = mapper.createObjectNode();
+                node.put("id", mqttId);
+                node.put("label", mqttId);
+                node.put("value", messageRepository.countByMqttIdAndDateBetween(mqttId, fromDate, toDate));
+                array.add(node);
+
+            }
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(array);
     }
 
     private static SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-DD hh:mm:ss");
