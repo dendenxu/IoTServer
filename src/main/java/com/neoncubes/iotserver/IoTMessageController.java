@@ -1,5 +1,6 @@
 package com.neoncubes.iotserver;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 // import java.util.ArrayList;
 // import java.util.Arrays;
@@ -169,6 +170,8 @@ public class IoTMessageController {
         return ResponseEntity.status(HttpStatus.OK).body(node);
     }
 
+    private static SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-DD hh:mm:ss");
+
     // http://localhost:8080/api/message/count?mqttId=device0000&fromMills=1624666885920&toMills=1624684885920
     @GetMapping("/detailcount")
     public ResponseEntity<?> detailcount(@RequestParam(required = false) String email, @RequestParam long fromMills,
@@ -215,7 +218,7 @@ public class IoTMessageController {
                     Date to = new Date(end);
                     long count = messageRepository.countByMqttIdAndDateBetween(device.getMqttId(), from, to);
                     ObjectNode node = mapper.createObjectNode();
-                    node.put("x", from.toString());
+                    node.put("x", fmt.format(from));
                     node.put("y", count);
                     data.add(node);
                 }
