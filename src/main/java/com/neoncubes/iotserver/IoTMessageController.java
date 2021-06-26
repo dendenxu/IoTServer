@@ -1,8 +1,13 @@
 package com.neoncubes.iotserver;
 
+import java.util.Date;
 // import java.util.ArrayList;
 // import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -90,8 +95,9 @@ public class IoTMessageController {
 
                 if (page == null || size == null) {
                     logger.info("Trying to find the messages for {}", user);
-                    List<IoTMessage> messages = messageRepository.findByEmailOrderByDateDesc(user.getEmail());
-                    logger.info("Found theses messages: {}", messages.size());
+                    Stream<IoTMessage> messages = messageRepository.findStreamByEmailOrderByDateDesc(user.getEmail(),
+                            null);
+                    logger.info("Found theses messages: {}", messages.count());
 
                     return ResponseEntity.status(HttpStatus.OK).body(messages);
 
@@ -102,7 +108,7 @@ public class IoTMessageController {
 
                     PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
                     // Page<IoTMessage> pages = messageRepository.findByDeviceIn(devices, request);
-                    Page<IoTMessage> pages = messageRepository.findByEmailOrderByDateDesc(user.getEmail(), request);
+                    Page<IoTMessage> pages = messageRepository.findPageByEmailOrderByDateDesc(user.getEmail(), request);
 
                     logger.info("Got pages: {}", pages);
 
@@ -118,4 +124,58 @@ public class IoTMessageController {
         }
     }
 
+    @Autowired
+    private ObjectMapper mapper;
+
+    // http://localhost:8080/api/message/count?mqttId=device0000&fromMills=1624666885920&toMills=1624684885920
+    @GetMapping("/count")
+    public ResponseEntity<?> count(@RequestParam(required = false) String email,
+            @RequestParam(required = false) String mqttId, @RequestParam(required = false) Date fromDate,
+            @RequestParam(required = false) Date toDate, @RequestParam(required = false) Long fromMills,
+            @RequestParam(required = false) Long toMills, Authentication auth) {
+        logger.info("Getting params: email: {}, mqttId: {}, auth: {}", email, mqttId, auth);
+
+        Pair<Boolean, String> access = processUserAccess(email, auth);
+        if (access.getFirst()) {
+            email = access.getSecond();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(access.getSecond());
+        }
+
+        logger.info("Updated email from authorization: {}", email);
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Cannot find the user specified");
+        } else {
+            ObjectNode node = mapper.createObjectNode();
+            Long count;
+
+            // Currently only support both of the parameters provided
+            if (fromMills == null || toMills == null) {
+                if (fromDate == null || toDate == null) {
+
+                    if (mqttId == null) {
+                        count = messageRepository.countByEmail(email);
+                    } else {
+                        count = messageRepository.countByMqttId(mqttId);
+                    }
+                } else {
+                    if (mqttId == null) {
+                        count = messageRepository.countByEmailAndDateBetween(email, fromDate, toDate);
+                    } else {
+                        count = messageRepository.countByMqttIdAndDateBetween(mqttId, fromDate, toDate);
+                    }
+                }
+            } else {
+                if (mqttId == null) {
+                    count = messageRepository.countByEmailAndDateBetween(email, new Date(fromMills), new Date(toMills));
+                } else {
+                    count = messageRepository.countByMqttIdAndDateBetween(mqttId, new Date(fromMills),
+                            new Date(toMills));
+                }
+            }
+            node.put("count", count);
+            return ResponseEntity.status(HttpStatus.OK).body(node);
+        }
+    }
 }
