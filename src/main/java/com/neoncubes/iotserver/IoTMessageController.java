@@ -372,13 +372,16 @@ public class IoTMessageController {
 
         List<Device> devices = deviceRepository.findByEmail(email);
 
+        int index = 0;
         for (Device device : devices) {
             ObjectNode node = mapper.valueToTree(device);
+            node.put("index", index);
             node.set("messages",
                     mapper.valueToTree(messageRepository.findByMqttIdAndDateBetweenOrderByDateDesc(device.getMqttId(),
                             new Date(fromMills), new Date(toMills))));
 
             root.add(node);
+            index++;
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(root);
