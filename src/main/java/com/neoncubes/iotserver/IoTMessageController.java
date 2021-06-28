@@ -294,6 +294,7 @@ public class IoTMessageController {
 
     }
 
+    // ! this is calibrated to match the front end AMap format
     @GetMapping("/route")
     public ResponseEntity<?> route(@RequestParam(required = false) String email, @RequestParam long fromMills,
             @RequestParam long toMills, Authentication auth) {
@@ -344,6 +345,40 @@ public class IoTMessageController {
                 coordinate.add(message.getLng());
                 coordinate.add(message.getLat());
             }
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(root);
+
+    }
+
+    @GetMapping("/structured")
+    public ResponseEntity<?> structured(@RequestParam(required = false) String email, @RequestParam long fromMills,
+            @RequestParam long toMills, Authentication auth) {
+
+        Pair<Boolean, String> access = processUserAccess(email, auth);
+        if (access.getFirst()) {
+            email = access.getSecond();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(access.getSecond());
+        }
+
+        logger.info("Updated email from authorization: {}", email);
+
+        ArrayNode root = mapper.createArrayNode();
+
+        // Currently only support both of the parameters provided
+
+        logger.info("Counting from {} to {}", fromMills, toMills);
+
+        List<Device> devices = deviceRepository.findByEmail(email);
+
+        for (Device device : devices) {
+            ObjectNode node = mapper.valueToTree(device);
+            node.set("messages",
+                    mapper.valueToTree(messageRepository.findByMqttIdAndDateBetweenOrderByDateDesc(device.getMqttId(),
+                            new Date(fromMills), new Date(toMills))));
+
+            root.add(node);
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(root);
