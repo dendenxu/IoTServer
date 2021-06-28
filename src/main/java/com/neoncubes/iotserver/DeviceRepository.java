@@ -15,7 +15,7 @@ public interface DeviceRepository extends MongoRepository<Device, String> {
 
     Device findByMqttIdAndEmail(String mqttId, String email);
 
-    List<Device> findByEmail(String email);
+    List<Device> findByEmailOrderByMqttIdAsc(String email);
 
     Integer countByEmail(String email);
 

@@ -85,7 +85,7 @@ public class DeviceController {
         if (mqttId == null) {
             // return
             // ResponseEntity.status(HttpStatus.OK).body(deviceRepository.findByUser(user));
-            List<Device> devices = deviceRepository.findByEmail(email);
+            List<Device> devices = deviceRepository.findByEmailOrderByMqttIdAsc(email);
             ArrayList<ObjectNode> nodes = new ArrayList<ObjectNode>();
             devices.forEach((device) -> {
                 IoTMessage message = messageRepository.findTopByMqttIdOrderByDateDesc(device.getMqttId());
@@ -141,7 +141,7 @@ public class DeviceController {
         }
 
         if (mqttId == null) {
-            return ResponseEntity.status(HttpStatus.OK).body(deviceRepository.findByEmail(email));
+            return ResponseEntity.status(HttpStatus.OK).body(deviceRepository.findByEmailOrderByMqttIdAsc(email));
         } else {
             Device device = deviceRepository.findByMqttIdAndEmail(mqttId, email);
             if (device == null) {

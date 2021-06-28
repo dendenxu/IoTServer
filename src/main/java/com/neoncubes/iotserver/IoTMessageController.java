@@ -167,7 +167,7 @@ public class IoTMessageController {
         if (fromDate == null || toDate == null) {
             if (mqttId == null) {
                 if (aggregate != null && aggregate) {
-                    List<Device> devices = deviceRepository.findByEmail(email);
+                    List<Device> devices = deviceRepository.findByEmailOrderByMqttIdAsc(email);
                     devices.forEach((device) -> {
                         String deviceid = device.getMqttId(); // ! annoying redeclration problem
                         ObjectNode node = mapper.createObjectNode();
@@ -200,7 +200,7 @@ public class IoTMessageController {
 
             if (mqttId == null) {
                 if (aggregate != null && aggregate) {
-                    List<Device> devices = deviceRepository.findByEmail(email);
+                    List<Device> devices = deviceRepository.findByEmailOrderByMqttIdAsc(email);
                     final Date finalFromDate = fromDate;
                     final Date finalToDate = toDate;
                     devices.forEach((device) -> {
@@ -266,7 +266,7 @@ public class IoTMessageController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Invalid time interval, are you providing a negative tick?");
         } else {
-            List<Device> devices = deviceRepository.findByEmail(email);
+            List<Device> devices = deviceRepository.findByEmailOrderByMqttIdAsc(email);
 
             for (Device device : devices) {
                 ObjectNode deviceNode = mapper.createObjectNode();
@@ -318,7 +318,7 @@ public class IoTMessageController {
         root.put("type", "FeatureCollection");
         root.set("features", features);
 
-        List<Device> devices = deviceRepository.findByEmail(email);
+        List<Device> devices = deviceRepository.findByEmailOrderByMqttIdAsc(email);
         int index = 0;
         for (Device device : devices) {
             ObjectNode feature = mapper.createObjectNode();
@@ -370,7 +370,7 @@ public class IoTMessageController {
 
         logger.info("Counting from {} to {}", fromMills, toMills);
 
-        List<Device> devices = deviceRepository.findByEmail(email);
+        List<Device> devices = deviceRepository.findByEmailOrderByMqttIdAsc(email);
 
         int index = 0;
         for (Device device : devices) {
