@@ -23,6 +23,8 @@ public interface IoTMessageRepository extends MongoRepository<IoTMessage, String
 
     List<IoTMessage> findByMqttId(String mqttId);
 
+    List<IoTMessage> findByMqttIdAndDateBetweenOrderByDateDesc(String mqttId, Date from, Date to);
+
     IoTMessage findTopByMqttIdOrderByDateDesc(String mqttId);
 
     Long countByMqttIdAndValueGreaterThan(String mqttId, Integer value);

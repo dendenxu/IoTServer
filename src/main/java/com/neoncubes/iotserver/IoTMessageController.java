@@ -293,4 +293,60 @@ public class IoTMessageController {
         }
 
     }
+
+    @GetMapping("/route")
+    public ResponseEntity<?> route(@RequestParam(required = false) String email, @RequestParam long fromMills,
+            @RequestParam long toMills, Authentication auth) {
+
+        Pair<Boolean, String> access = processUserAccess(email, auth);
+        if (access.getFirst()) {
+            email = access.getSecond();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(access.getSecond());
+        }
+
+        logger.info("Updated email from authorization: {}", email);
+
+        ObjectNode root = mapper.createObjectNode();
+        ArrayNode features = mapper.createArrayNode();
+
+        // Currently only support both of the parameters provided
+
+        logger.info("Counting from {} to {}", fromMills, toMills);
+
+        root.put("type", "FeatureCollection");
+        root.set("features", features);
+
+        List<Device> devices = deviceRepository.findByEmail(email);
+        int index = 0;
+        for (Device device : devices) {
+            ObjectNode feature = mapper.createObjectNode();
+            ObjectNode properties = mapper.createObjectNode();
+            ObjectNode geometry = mapper.createObjectNode();
+            ArrayNode coordinates = mapper.createArrayNode();
+
+            features.add(feature);
+
+            feature.put("type", "Feature");
+            feature.set("properties", properties);
+            feature.set("geometry", geometry);
+
+            properties.put("type", index++);
+
+            geometry.put("type", "LineString");
+            geometry.set("coordinates", coordinates);
+
+            List<IoTMessage> messages = messageRepository.findByMqttIdAndDateBetweenOrderByDateDesc(device.getMqttId(),
+                    new Date(fromMills), new Date(toMills));
+            for (IoTMessage message : messages) {
+                ArrayNode coordinate = mapper.createArrayNode();
+                coordinates.add(coordinate);
+                coordinate.add(message.getLng());
+                coordinate.add(message.getLat());
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(root);
+
+    }
 }
