@@ -77,9 +77,9 @@ public class IoTMessageController {
 
     @GetMapping("/query")
     public ResponseEntity<?> query(@RequestParam(required = false) String email,
-            @RequestParam(required = false) String mqttId, @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size, Authentication auth) {
-        logger.info("Getting params: email: {}, mqttId: {}, auth: {}", email, mqttId, auth);
+            @RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) Long fromMills, @RequestParam(required = false) Long toMills,
+            Authentication auth) {
 
         Pair<Boolean, String> access = processUserAccess(email, auth);
         if (access.getFirst()) {
@@ -90,21 +90,33 @@ public class IoTMessageController {
 
         logger.info("Updated email from authorization: {}", email);
 
-        if (mqttId == null) {
+        if (page == null || size == null) {
 
-            if (page == null || size == null) {
-                Stream<IoTMessage> messages = messageRepository.findStreamByEmailOrderByDateDesc(email, null);
-                logger.info("Found theses messages: {}", messages.count());
+            if (fromMills == null || toMills == null) {
+
+                long count = messageRepository.countByEmail(email);
+
+                if (count > 1e5) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(count
+                            + " messages is too much, use paging or limit (query parameters: page, size) the date instead (query parameters: fromMills, toMills)");
+                }
+
+                List<IoTMessage> messages = messageRepository.findByEmailOrderByDateDesc(email);
+                logger.info("Found theses messages: {}", messages.size());
 
                 return ResponseEntity.status(HttpStatus.OK).body(messages);
-
             } else {
 
-                // List<Device> devices = deviceRepository.findByUser(user);
-                // logger.info("Found devices: {}", devices);
+                List<IoTMessage> messages = messageRepository.findByEmailAndDateBetweenOrderByDateDesc(email,
+                        new Date(fromMills), new Date(toMills));
 
+                return ResponseEntity.status(HttpStatus.OK).body(messages);
+            }
+
+        } else {
+            if (fromMills == null || toMills == null) {
                 PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
-                // Page<IoTMessage> pages = messageRepository.findByDeviceIn(devices, request);
+
                 Page<IoTMessage> pages = messageRepository.findPageByEmailOrderByDateDesc(email, request);
 
                 logger.info("Got pages: {}", pages);
@@ -113,11 +125,22 @@ public class IoTMessageController {
                 logger.info("Got messages: {}", messages);
 
                 return ResponseEntity.status(HttpStatus.OK).body(messages);
-            }
 
-        } else {
-            return ResponseEntity.status(HttpStatus.OK).body(messageRepository.findByMqttId(mqttId));
+            } else {
+                PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
+
+                Page<IoTMessage> pages = messageRepository.findPageByEmailAndDateBetweenOrderByDateDesc(email,
+                        new Date(fromMills), new Date(toMills), request);
+
+                logger.info("Got pages: {}", pages);
+
+                List<IoTMessage> messages = pages.getContent();
+                logger.info("Got messages: {}", messages);
+
+                return ResponseEntity.status(HttpStatus.OK).body(messages);
+            }
         }
+
     }
 
     @Autowired
