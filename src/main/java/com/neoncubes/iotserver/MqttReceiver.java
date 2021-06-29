@@ -14,23 +14,27 @@ import org.springframework.stereotype.Component;
 public class MqttReceiver implements DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(MqttReceiver.class);
 
-    private final MqttClient mqttClient;
+    private MqttClient mqttClient;
 
     @Autowired
     public MqttReceiver(@Value("${mqtt.clientId}") String clientId, @Value("${mqtt.hostname}") String hostname,
             @Value("${mqtt.port}") int port) throws MqttException {
-        this.mqttClient = mqttClient(clientId, hostname, port);
+        this.mqttClient = mqttClient(clientId, "tcp://" + hostname + ":" + port);
     }
 
-    public MqttClient mqttClient(String clientId, String hostname, int port) throws MqttException {
+    private void forceReconnect() throws MqttException {
+        this.mqttClient = mqttClient(this.mqttClient.getClientId(), this.mqttClient.getServerURI());
+    }
 
-        logger.info("Creating the mqtt client {} with {}:{}", clientId, hostname, port);
+    public MqttClient mqttClient(String clientId, String serverURI) throws MqttException {
+
+        logger.info("Creating the mqtt client {} with {}", clientId, serverURI);
 
         MqttClientPersistence persistence = new MemoryPersistence();
 
         logger.info("Created persistence: {}", persistence);
 
-        MqttClient mqttClient = new MqttClient("tcp://" + hostname + ":" + port, clientId, persistence);
+        MqttClient mqttClient = new MqttClient(serverURI, clientId, persistence);
 
         mqttClient.connect(mqttConnectOptions());
 
@@ -53,7 +57,11 @@ public class MqttReceiver implements DisposableBean {
 
     public void subscribe(final String topic, IMqttMessageListener listener)
             throws MqttException, InterruptedException {
-        mqttClient.subscribeWithResponse(topic, listener);
+        try {
+            mqttClient.subscribeWithResponse(topic, listener);
+        } catch (MqttException exception) {
+            forceReconnect();
+        }
     }
 
     @Override
