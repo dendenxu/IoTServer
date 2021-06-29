@@ -5,7 +5,6 @@ import java.util.Date;
 // import java.util.ArrayList;
 // import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -256,7 +255,7 @@ public class IoTMessageController {
         return ResponseEntity.status(HttpStatus.OK).body(array);
     }
 
-    private static SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-DD hh:mm:ss");
+    private static SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     // http://localhost:8080/api/message/count?mqttId=device0000&fromMills=1624666885920&toMills=1624684885920
     @GetMapping("/detailcount")
